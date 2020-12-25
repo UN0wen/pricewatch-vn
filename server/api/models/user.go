@@ -1,10 +1,15 @@
 package models
 
 import (
+	"encoding/json"
 	"fmt"
+	"io/ioutil"
+	"net/http"
 	"time"
 
 	"github.com/UN0wen/pricewatch-vn/server/db"
+	"github.com/UN0wen/pricewatch-vn/server/utils"
+	"github.com/dgrijalva/jwt-go"
 	"github.com/google/uuid"
 	"github.com/mitchellh/mapstructure"
 	"github.com/pkg/errors"
@@ -33,6 +38,33 @@ type User struct {
 // UserQuery represents all of the rows the user can be queried over
 type UserQuery struct {
 	ID uuid.UUID
+}
+
+// NewUser is used to create a new user object from an incoming HTTP request.
+// It takes in the HTTP request in JSON format.
+// It returns the user constructed and an error if one exists.
+func NewUser(r *http.Request) (user User, err error) {
+	b, err := ioutil.ReadAll(r.Body)
+	defer r.Body.Close()
+	if err != nil {
+		err = errors.Wrapf(err, "Couldn't read request body")
+	}
+	// Converts JSON to user
+	json.Unmarshal(b, &user)
+	return user, err
+}
+
+// GenerateJWT creates a JSON Web Token for a user based on the id,
+// with an expiration time of 1 day
+// It returns the token string
+func (user *User) GenerateJWT() string {
+	token := jwt.NewWithClaims(jwt.SigningMethodHS256, jwt.MapClaims{
+		"id":  user.ID,
+		"exp": time.Now().Add(time.Hour * 24).Unix(),
+	})
+	tokenString, err := token.SignedString(utils.GPTokenSecret)
+	utils.CheckError(err)
+	return tokenString
 }
 
 // NewUserTable creates a new table in the database for users.
