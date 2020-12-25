@@ -65,8 +65,8 @@ func NewItemTable(db *db.Db) (itemTable ItemTable, err error) {
 }
 
 // Get gets stuffs
-func (table *ItemTable) Get(itemQuery ItemQuery, op string) (items []Item, err error) {
-	allData, err := table.connection.Get(itemQuery, op, UserTableName)
+func (table *ItemTable) Get(itemQuery ItemQuery, op, compareOp string) (items []Item, err error) {
+	allData, err := table.connection.Get(itemQuery, op, compareOp, ItemTableName)
 	if err != nil {
 		return
 	}
@@ -105,7 +105,7 @@ func (table *ItemTable) Insert(item Item) (err error) {
 
 // Update will update the item row with an incoming item
 func (table *ItemTable) Update(id uuid.UUID, newItem Item) (updated Item, err error) {
-	data, err := table.connection.Update(id, UserTableName, newItem)
+	data, err := table.connection.Update(id, ItemTableName, newItem)
 	if err != nil {
 		return
 	}
@@ -114,10 +114,8 @@ func (table *ItemTable) Update(id uuid.UUID, newItem Item) (updated Item, err er
 }
 
 // Delete permanently removes the item with uuid from table
-// TODO: finish
 func (table *ItemTable) Delete(id uuid.UUID) (err error) {
-	// TODO: delete all from user-item table
-	// Delete user
+	// cascade
 	err = table.connection.Delete(id, ItemTableName)
 	return
 }

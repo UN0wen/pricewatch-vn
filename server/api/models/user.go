@@ -63,8 +63,8 @@ func NewUserTable(db *db.Db) (userTable UserTable, err error) {
 }
 
 // Get gets stuffs
-func (table *UserTable) Get(userQuery UserQuery, op string) (users []User, err error) {
-	allData, err := table.connection.Get(userQuery, op, UserTableName)
+func (table *UserTable) Get(userQuery UserQuery, op, compareOp string) (users []User, err error) {
+	allData, err := table.connection.Get(userQuery, op, compareOp, UserTableName)
 	if err != nil {
 		return
 	}

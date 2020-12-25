@@ -6,7 +6,6 @@ import (
 	"time"
 
 	"github.com/UN0wen/pricewatch-vn/server/api/models"
-	"github.com/UN0wen/pricewatch-vn/server/db"
 	"github.com/UN0wen/pricewatch-vn/server/utils"
 	"github.com/go-chi/chi"
 	"github.com/go-chi/chi/middleware"
@@ -14,17 +13,7 @@ import (
 )
 
 func main() {
-	cfg := db.Config{
-		Host:     "localhost",
-		Port:     "5432",
-		User:     "postgres",
-		Password: "postgres",
-		Database: "pricewatch",
-	}
-
-	database, _ := db.Setup(cfg)
-
-	table, _ := models.NewUserTable(&database)
+	layer := models.LayerInstance()
 
 	user := models.User{
 		ID:       uuid.New(),
@@ -33,15 +22,15 @@ func main() {
 		Password: "password",
 	}
 
-	err := table.Insert(user)
-	if err != nil {
-		panic(err)
-	}
+	err := layer.User.Insert(user)
+	utils.CheckError(err)
 
-	uuid, _ := uuid.Parse("05d50b0b-9e3e-405e-8c4b-ce9ce4e6f1aa")
-	user2, _ := table.Get(models.UserQuery{
+	uuid, err := uuid.Parse("05d50b0b-9e3e-405e-8c4b-ce9ce4e6f1aa")
+	utils.CheckError(err)
+	user2, err := layer.User.Get(models.UserQuery{
 		ID: uuid,
-	}, "")
+	}, "", "=")
+	utils.CheckError(err)
 	utils.Sugar.Infof("%s", user2)
 
 	router := chi.NewRouter()

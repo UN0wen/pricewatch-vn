@@ -18,6 +18,8 @@ import (
 	"github.com/jackc/pgx/v4/pgxpool"
 )
 
+// AutoParam are parameters that are created automatically
+// SkipParam are parameters that are supposed to be skipped over
 var (
 	AutoParam = map[string]bool{
 		"timecreated":  true,
@@ -143,8 +145,12 @@ func hashPassword(pass string) (hash []byte, err error) {
 // Get attempts to provide a generalized search through the specified table based on the provided queries.
 // It takes a query for the queryable fields, and an operator such as "AND" or "OR" to define the context of the search. It takes in a table name to act on.
 // It returns all the data for all found objects and an error if one exists.
-func (db *Db) Get(mQuery interface{}, op, table string) (objects []map[string]interface{}, err error) {
+func (db *Db) Get(mQuery interface{}, op, compareOp, table string) (objects []map[string]interface{}, err error) {
 	var query bytes.Buffer
+	if compareOp == "" {
+		compareOp = "="
+	}
+
 	query.WriteString(fmt.Sprintf("SELECT * FROM %s", table))
 
 	// Use reflection to analyze object fields
@@ -167,7 +173,7 @@ func (db *Db) Get(mQuery interface{}, op, table string) (objects []map[string]in
 			k := strings.ToLower(fields.Type().Field(i).Name)
 			v = fmt.Sprintf("%v", v)
 			values = append(values, v)
-			query.WriteString(fmt.Sprintf("%s=$%d", k, vIdx))
+			query.WriteString(fmt.Sprintf("%s%s$%d", k, compareOp, vIdx))
 			vIdx++
 		}
 	}
@@ -190,7 +196,7 @@ func (db *Db) Get(mQuery interface{}, op, table string) (objects []map[string]in
 // It returns the data for the found object, or an error if one exists.
 func (db *Db) GetByID(id uuid.UUID, table string) (data map[string]interface{}, err error) {
 	query := idQuery{ID: id}
-	objs, err := db.Get(query, "", table)
+	objs, err := db.Get(query, "", "=", table)
 	if err != nil {
 		err = errors.Wrapf(err, "Search error")
 		return
