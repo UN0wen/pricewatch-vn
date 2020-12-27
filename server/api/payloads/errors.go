@@ -59,5 +59,15 @@ func ErrUnauthorized(err error) render.Renderer {
 	}
 }
 
+// ErrInternalError is a response payload with status code 500.
+func ErrInternalError(err error) render.Renderer {
+	return &ErrResponse{
+		Err:            err,
+		HTTPStatusCode: 500,
+		StatusText:     "Internal server error",
+		ErrorText:      err.Error(),
+	}
+}
+
 // ErrNotFound is a standard response for a 404 code
 var ErrNotFound = &ErrResponse{HTTPStatusCode: 404, StatusText: "Resource not found."}

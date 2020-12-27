@@ -6,15 +6,16 @@ import (
 	"path/filepath"
 
 	"github.com/UN0wen/pricewatch-vn/server/api/controllers"
+	"github.com/UN0wen/pricewatch-vn/server/middleware"
 	"github.com/UN0wen/pricewatch-vn/server/utils"
 	"github.com/go-chi/chi"
-	"github.com/go-chi/chi/middleware"
+	chimiddleware "github.com/go-chi/chi/middleware"
 	"github.com/go-chi/render"
 )
 
 func createUserRoutes(r *chi.Mux) {
 	r.Route("/api/users", func(r chi.Router) {
-		r.With(controllers.UserCtx).Get("/", controllers.GetUser) // Get /users
+		r.With(middleware.Authenticate).With(controllers.SessionCtx).Get("/", controllers.GetUser) // Get /users
 		r.Post("/signup", controllers.CreateUser)
 		r.Post("/login", controllers.LoginUser)
 	})
@@ -24,10 +25,10 @@ func createUserRoutes(r *chi.Mux) {
 func NewRouter() *chi.Mux {
 	router := chi.NewRouter()
 
-	router.Use(middleware.RequestID)
-	router.Use(middleware.Logger)
-	router.Use(middleware.Recoverer)
-	router.Use(middleware.URLFormat)
+	router.Use(chimiddleware.RequestID)
+	router.Use(chimiddleware.Logger)
+	router.Use(chimiddleware.Recoverer)
+	router.Use(chimiddleware.URLFormat)
 	router.Use(render.SetContentType(render.ContentTypeJSON))
 
 	createUserRoutes(router)

@@ -89,7 +89,7 @@ func (table *ItemTable) GetByID(id uuid.UUID) (item Item, err error) {
 	}
 	err = mapstructure.Decode(data, &item)
 	if err != nil {
-		err = errors.Wrapf(err, "Get query failed for user with id: %s", id)
+		err = errors.Wrapf(err, "Get query failed for item with id: %s", id)
 	}
 	return
 }
@@ -98,7 +98,7 @@ func (table *ItemTable) GetByID(id uuid.UUID) (item Item, err error) {
 func (table *ItemTable) Insert(item Item) (err error) {
 	err = table.connection.Insert(ItemTableName, item)
 	if err != nil {
-		err = errors.Wrapf(err, "Insertion query failed for new user: %s", item)
+		err = errors.Wrapf(err, "Insertion query failed for new item: %s", item)
 	}
 	return
 }
@@ -117,5 +117,8 @@ func (table *ItemTable) Update(id uuid.UUID, newItem Item) (updated Item, err er
 func (table *ItemTable) Delete(id uuid.UUID) (err error) {
 	// cascade
 	err = table.connection.Delete(id, ItemTableName)
+	if err != nil {
+		err = errors.Wrapf(err, "Delete query failed for item with id: %s", id)
+	}
 	return
 }

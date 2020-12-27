@@ -13,9 +13,7 @@ import (
 	"github.com/asaskevich/govalidator"
 	"github.com/google/uuid"
 	"github.com/pkg/errors"
-	"golang.org/x/crypto/bcrypt"
 
-	"github.com/jackc/pgx/v4"
 	"github.com/jackc/pgx/v4/pgxpool"
 )
 
@@ -33,6 +31,7 @@ var (
 	TimeParam = map[string]bool{
 		"timecreated":  true,
 		"timeloggedin": true,
+		"expiresafter": true,
 	}
 )
 
@@ -100,8 +99,6 @@ func (db *Db) Close() {
 	return
 }
 
-// Simple ORM to wrap database calls
-
 // CreateTable executes the query given
 func (db *Db) CreateTable(query string) (err error) {
 	utils.Sugar.Infof("SQL Query: %s", query)
@@ -113,39 +110,35 @@ func (db *Db) CreateTable(query string) (err error) {
 	return
 }
 
-func mapRows(rows pgx.Rows) (objects []map[string]interface{}, err error) {
-	// Get all the rows that matched the query
-	cols := rows.FieldDescriptions()
-	for rows.Next() {
-		columns := make([]interface{}, len(cols))
-		columnPtrs := make([]interface{}, len(cols))
-		for i := range columns {
-			columnPtrs[i] = &columns[i]
-		}
-		if err = rows.Scan(columnPtrs...); err != nil {
-			err = errors.Wrapf(err, "Get query failed to execute")
-			return
-		}
-		m := make(map[string]interface{})
-		for i, col := range cols {
-			val := columnPtrs[i].(*interface{})
-			m[strings.Title(string(col.Name))] = *val
-		}
-		objects = append(objects, m)
-	}
+// CreateIndex creates an index on tablename
+func (db *Db) CreateIndex(tableName, indexType, indexColumn string) (err error) {
+	var query bytes.Buffer
+	query.WriteString(fmt.Sprintf("CREATE INDEX IF NOT EXISTS %s_%s_idx ON %s USING %s (%s)", tableName, indexColumn, tableName, indexType, indexColumn))
 
-	return
-}
-
-// Hashes a password string
-func hashPassword(pass string) (hash []byte, err error) {
-	hash, err = bcrypt.GenerateFromPassword([]byte(pass), bcrypt.DefaultCost)
+	utils.Sugar.Infof("SQL Query: %s", query.String())
+	_, err = db.Pool.Exec(context.Background(), query.String())
 	if err != nil {
-		err = errors.Wrapf(err, "Password hash failed")
-		return
+		err = errors.Wrapf(err, "Index creation query failed")
 	}
 	return
 }
+
+// CreateView creates an view on tablename with query
+func (db *Db) CreateView(viewName, viewQuery string) (err error) {
+	var query bytes.Buffer
+
+	query.WriteString(fmt.Sprintf("CREATE OR REPLACE VIEW %s AS %s", viewName, viewQuery))
+
+	utils.Sugar.Infof("SQL Query: %s", query.String())
+
+	_, err = db.Pool.Exec(context.Background(), query.String())
+	if err != nil {
+		err = errors.Wrapf(err, "View creation query failed")
+	}
+	return
+}
+
+// Simple ORM to wrap database calls
 
 // Get attempts to provide a generalized search through the specified table based on the provided queries.
 // It takes a query for the queryable fields, and an operator such as "AND" or "OR" to define the context of the search. It takes in a table name to act on.

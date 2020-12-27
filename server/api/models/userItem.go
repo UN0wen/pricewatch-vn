@@ -9,29 +9,29 @@ import (
 	"github.com/pkg/errors"
 )
 
-// ItemTableName is the name of the user table in the db
+// UserItemTableName is the name of the user table in the db
 const (
 	UserItemTableName = "useritems"
 )
 
-// ItemTable represents the connection to the db instance
+// UserItemTable represents the connection to the db instance
 type UserItemTable struct {
 	connection *db.Db
 }
 
-// Item represents a single row in the ItemTable
+// UserItem represents a single row in the UserItemTable
 type UserItem struct {
 	UserID uuid.UUID `valid:"required" json:"userid"`
 	ItemID uuid.UUID `valid:"required" json:"itemid"`
 }
 
-// ItemQuery represents all of the rows the item can be queried over
+// UserItemQuery represents all of the rows the item can be queried over
 type UserItemQuery struct {
 	UserID uuid.UUID
 	ItemID uuid.UUID
 }
 
-// NewItemTable creates a new table in the database for items.
+// NewUserItemTable creates a new table in the database for items.
 // It takes a reference to an open db connection and returns the constructed table
 func NewUserItemTable(db *db.Db) (userItemTable UserItemTable, err error) {
 	// Ensure connection is alive
@@ -80,7 +80,7 @@ func (table *UserItemTable) GetByID(id uuid.UUID) (userItem UserItem, err error)
 	}
 	err = mapstructure.Decode(data, &userItem)
 	if err != nil {
-		err = errors.Wrapf(err, "Get query failed for user with id: %s", id)
+		err = errors.Wrapf(err, "Get query failed for useritem with id: %s", id)
 	}
 	return
 }
@@ -89,7 +89,7 @@ func (table *UserItemTable) GetByID(id uuid.UUID) (userItem UserItem, err error)
 func (table *UserItemTable) Insert(userItem UserItem) (err error) {
 	err = table.connection.Insert(UserItemTableName, userItem)
 	if err != nil {
-		err = errors.Wrapf(err, "Insertion query failed for new user: %s", userItem)
+		err = errors.Wrapf(err, "Insertion query failed for new useritem: %s", userItem)
 	}
 	return
 }

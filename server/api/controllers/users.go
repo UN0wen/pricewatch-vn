@@ -26,45 +26,53 @@ func getClaims(r *http.Request) (claimString string, err error) {
 	return
 }
 
-// UserCtx middleware is used to load an User object from
-// the URL parameters passed through as the request. In case
+// SessionCtx middleware is used to load an Session object from
+// the authorization token passed through as the request. In case
 // the User could not be found, we stop here and return a 404.
-func UserCtx(next http.Handler) http.Handler {
+func SessionCtx(next http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		var user models.User
+		var session models.Session
 		var err error
-		userID, err := getClaims(r)
+		sessionID, err := getClaims(r)
 		if err != nil {
 			render.Render(w, r, payloads.ErrUnauthorized(err))
 			return
 		}
 
-		if userID != "" {
-			id, err := uuid.Parse(userID)
+		if sessionID != "" {
+			id, err := uuid.Parse(sessionID)
 			if err != nil {
 				render.Render(w, r, payloads.ErrNotFound)
 				return
 			}
-			user, err = models.LayerInstance().User.GetByID(id)
+			session, err = models.LayerInstance().Session.GetByID(id)
 		} else {
 			render.Render(w, r, payloads.ErrNotFound)
 			return
 		}
+
 		if err != nil {
 			render.Render(w, r, payloads.ErrNotFound)
 			return
 		}
 
-		ctx := context.WithValue(r.Context(), "user", &user)
+		ctx := context.WithValue(r.Context(), "userID", session.UserID)
 		next.ServeHTTP(w, r.WithContext(ctx))
 	})
 }
 
 // GetUser returns a specific User.
 func GetUser(w http.ResponseWriter, r *http.Request) {
-	user := r.Context().Value("user").(*models.User)
+	userID := r.Context().Value("userID")
 
-	if err := render.Render(w, r, payloads.NewUserResponse(user)); err != nil {
+	user, err := models.LayerInstance().User.GetByID(userID.(uuid.UUID))
+
+	if err != nil {
+		render.Render(w, r, payloads.ErrInternalError(err))
+		return
+	}
+
+	if err := render.Render(w, r, payloads.NewUserResponse(&user)); err != nil {
 		render.Render(w, r, payloads.ErrRender(err))
 		return
 	}
@@ -80,6 +88,7 @@ func CreateUser(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	// Creating a new User
 	user := data.User
 	user.ID, _ = uuid.NewUUID()
 	err := models.LayerInstance().User.Insert(*user)
@@ -93,6 +102,7 @@ func CreateUser(w http.ResponseWriter, r *http.Request) {
 	render.Render(w, r, payloads.NewUserResponse(user))
 }
 
+// LoginUser logs in a new user based on the provided credentials
 func LoginUser(w http.ResponseWriter, r *http.Request) {
 	data := &payloads.UserRequest{}
 
@@ -101,14 +111,29 @@ func LoginUser(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	// Find the user and return the found user
 	user := data.User
 	found, err := models.LayerInstance().User.Login(*user)
 
+	// Failed login
 	if err != nil {
-		render.Render(w, r, payloads.ErrInvalidRequest(err))
+		render.Render(w, r, payloads.ErrUnauthorized(err))
 		return
 	}
 
-	render.Status(r, http.StatusCreated)
-	render.Render(w, r, payloads.NewUserResponse(&found))
+	// Creates new session for User or return the current session
+
+	var sessionID uuid.UUID
+	// Try to get current session
+	// TODO: cache
+	sessions, err := models.LayerInstance().Session.Get(models.SessionQuery{UserID: found.ID}, "", "=")
+
+	// Session not found, create new session
+	if err != nil || len(sessions) == 0 {
+		sessionID, err = models.LayerInstance().Session.Insert(models.Session{UserID: found.ID})
+	} else {
+		sessionID = sessions[0].ID
+	}
+	render.Status(r, http.StatusOK)
+	render.Render(w, r, payloads.NewSessionResponse(sessionID))
 }

@@ -5,9 +5,7 @@ import (
 	"time"
 
 	"github.com/UN0wen/pricewatch-vn/server/db"
-	"github.com/UN0wen/pricewatch-vn/server/utils"
 	"github.com/asaskevich/govalidator"
-	"github.com/dgrijalva/jwt-go"
 	"github.com/google/uuid"
 	"github.com/mitchellh/mapstructure"
 	"github.com/pkg/errors"
@@ -66,19 +64,6 @@ func NewUserTable(db *db.Db) (userTable UserTable, err error) {
 		err = errors.Wrapf(err, "Could not initialize table %s", UserTableName)
 	}
 	return
-}
-
-// GenerateJWT creates a JSON Web Token for a user based on the id,
-// with an expiration time of 1 day
-// It returns the token string
-func (user *User) GenerateJWT() string {
-	token := jwt.NewWithClaims(jwt.SigningMethodHS256, jwt.MapClaims{
-		"id":  user.ID,
-		"exp": time.Now().Add(time.Hour * 24).Unix(),
-	})
-	tokenString, err := token.SignedString(utils.GPTokenSecret)
-	utils.CheckError(err)
-	return tokenString
 }
 
 // Login accepts a user object and checks that the user's email is in the database
@@ -183,5 +168,8 @@ func (table *UserTable) Delete(id uuid.UUID) (err error) {
 	// TODO: delete all from user-product table
 	// Delete user
 	err = table.connection.Delete(id, UserTableName)
+	if err != nil {
+		err = errors.Wrapf(err, "Delete query failed for user with id: %s", id)
+	}
 	return
 }

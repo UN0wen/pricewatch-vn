@@ -1,7 +1,10 @@
 package utils
 
 import (
+	"time"
+
 	"github.com/dgrijalva/jwt-go"
+	"github.com/google/uuid"
 )
 
 // DefaultTokenSecret is the default key used when there is no env vars
@@ -21,4 +24,17 @@ func ExtractClaims(tokenString string) map[string]interface{} {
 		return GPTokenSecret, nil
 	})
 	return token.Claims.(jwt.MapClaims)
+}
+
+// GenerateJWT creates a JSON Web Token based on an id,
+// with an expiration time of 1 day
+// It returns the token string
+func GenerateJWT(id uuid.UUID) string {
+	token := jwt.NewWithClaims(jwt.SigningMethodHS256, jwt.MapClaims{
+		"id":  id.String(),
+		"exp": time.Now().Add(time.Hour * 24).Unix(),
+	})
+	tokenString, err := token.SignedString(GPTokenSecret)
+	CheckError(err)
+	return tokenString
 }

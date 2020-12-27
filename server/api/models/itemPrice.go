@@ -33,7 +33,7 @@ type ItemPriceQuery struct {
 	Time time.Time
 }
 
-// NewItemTable creates a new table in the database for items.
+// NewItemPriceTable creates a new table in the database for items.
 // It takes a reference to an open db connection and returns the constructed table
 func NewItemPriceTable(db *db.Db) (itemPriceTable ItemPriceTable, err error) {
 	// Ensure connection is alive
@@ -82,7 +82,7 @@ func (table *ItemPriceTable) GetByID(id uuid.UUID) (itemPrice ItemPrice, err err
 	}
 	err = mapstructure.Decode(data, &itemPrice)
 	if err != nil {
-		err = errors.Wrapf(err, "Get query failed for user with id: %s", id)
+		err = errors.Wrapf(err, "Get query failed for itemprice with id: %s", id)
 	}
 	return
 }
@@ -91,7 +91,7 @@ func (table *ItemPriceTable) GetByID(id uuid.UUID) (itemPrice ItemPrice, err err
 func (table *ItemPriceTable) Insert(itemPrice ItemPrice) (err error) {
 	err = table.connection.Insert(ItemTableName, itemPrice)
 	if err != nil {
-		err = errors.Wrapf(err, "Insertion query failed for new user: %s", itemPrice)
+		err = errors.Wrapf(err, "Insertion query failed for new itemprice: %s", itemPrice)
 	}
 	return
 }
@@ -109,5 +109,8 @@ func (table *ItemPriceTable) Update(id uuid.UUID, newItemPrice ItemPrice) (updat
 // Delete permanently removes the item with uuid from table
 func (table *ItemPriceTable) Delete(id uuid.UUID) (err error) {
 	err = table.connection.Delete(id, ItemPriceTableName)
+	if err != nil {
+		err = errors.Wrapf(err, "Delete query failed for itemprice with id: %s", id)
+	}
 	return
 }
