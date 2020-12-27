@@ -13,6 +13,8 @@ import (
 func createUserRoutes(r *chi.Mux) {
 	r.Route("/api/users", func(r chi.Router) {
 		r.With(controllers.UserCtx).Get("/", controllers.GetUser) // Get /users
+		r.Post("/signup", controllers.CreateUser)
+		r.Post("/login", controllers.LoginUser)
 	})
 }
 

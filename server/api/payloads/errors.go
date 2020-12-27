@@ -49,5 +49,15 @@ func ErrRender(err error) render.Renderer {
 	}
 }
 
+// ErrUnauthorized is a response payload with status code 401.
+func ErrUnauthorized(err error) render.Renderer {
+	return &ErrResponse{
+		Err:            err,
+		HTTPStatusCode: 401,
+		StatusText:     "Unauthorized access",
+		ErrorText:      err.Error(),
+	}
+}
+
 // ErrNotFound is a standard response for a 404 code
 var ErrNotFound = &ErrResponse{HTTPStatusCode: 404, StatusText: "Resource not found."}

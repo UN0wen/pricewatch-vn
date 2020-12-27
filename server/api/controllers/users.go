@@ -2,6 +2,7 @@ package controllers
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"net/http"
 
@@ -13,10 +14,16 @@ import (
 )
 
 // getClaims will extract the authorization token from a request and get the associated claims for that id.
-func getClaims(r *http.Request) string {
-	tokenString := r.Header.Get("Authorization")[len("Bearer "):]
-	claims := utils.ExtractClaims(tokenString)
-	return fmt.Sprintf("%v", claims["id"])
+func getClaims(r *http.Request) (claimString string, err error) {
+	tokenString := r.Header.Get("Authorization")
+
+	if tokenString == "" {
+		err = errors.New("No Authorization token")
+		return
+	}
+	claims := utils.ExtractClaims(tokenString[len("Bearer "):])
+	claimString = fmt.Sprintf("%v", claims["id"])
+	return
 }
 
 // UserCtx middleware is used to load an User object from
@@ -26,7 +33,13 @@ func UserCtx(next http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		var user models.User
 		var err error
-		if userID := getClaims(r); userID != "" {
+		userID, err := getClaims(r)
+		if err != nil {
+			render.Render(w, r, payloads.ErrUnauthorized(err))
+			return
+		}
+
+		if userID != "" {
 			id, err := uuid.Parse(userID)
 			if err != nil {
 				render.Render(w, r, payloads.ErrNotFound)
@@ -58,7 +71,8 @@ func GetUser(w http.ResponseWriter, r *http.Request) {
 }
 
 // CreateUser creates a new User and returns it
-// back to the client as an acknowledgement.
+// back to the client as an acknowledgement. It generates a new
+// uuid when called.
 func CreateUser(w http.ResponseWriter, r *http.Request) {
 	data := &payloads.UserRequest{}
 	if err := render.Bind(r, data); err != nil {
@@ -67,6 +81,7 @@ func CreateUser(w http.ResponseWriter, r *http.Request) {
 	}
 
 	user := data.User
+	user.ID, _ = uuid.NewUUID()
 	err := models.LayerInstance().User.Insert(*user)
 
 	if err != nil {
@@ -76,4 +91,24 @@ func CreateUser(w http.ResponseWriter, r *http.Request) {
 
 	render.Status(r, http.StatusCreated)
 	render.Render(w, r, payloads.NewUserResponse(user))
+}
+
+func LoginUser(w http.ResponseWriter, r *http.Request) {
+	data := &payloads.UserRequest{}
+
+	if err := render.Bind(r, data); err != nil {
+		render.Render(w, r, payloads.ErrInvalidRequest(err))
+		return
+	}
+
+	user := data.User
+	found, err := models.LayerInstance().User.Login(*user)
+
+	if err != nil {
+		render.Render(w, r, payloads.ErrInvalidRequest(err))
+		return
+	}
+
+	render.Status(r, http.StatusCreated)
+	render.Render(w, r, payloads.NewUserResponse(&found))
 }

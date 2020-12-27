@@ -7,6 +7,7 @@ import (
 	"fmt"
 	"reflect"
 	"strings"
+	"time"
 
 	"github.com/UN0wen/pricewatch-vn/server/utils"
 	"github.com/asaskevich/govalidator"
@@ -20,14 +21,18 @@ import (
 
 // AutoParam are parameters that are created automatically
 // SkipParam are parameters that are supposed to be skipped over
+// TimeParams are parameters of type time.Time
 var (
 	AutoParam = map[string]bool{
-		"timecreated":  true,
-		"timeloggedin": true,
+		"timecreated": true,
 	}
 	SkipParam = map[string]bool{
 		"post_results": true,
 		"pre_results":  true,
+	}
+	TimeParam = map[string]bool{
+		"timecreated":  true,
+		"timeloggedin": true,
 	}
 )
 
@@ -261,7 +266,7 @@ func (db *Db) Insert(table, model interface{}) (err error) {
 		vIdx++
 	}
 	var query bytes.Buffer
-	query.WriteString(fmt.Sprintf(`INSERT INTO "%s" (%s) VALUES (%s) ON CONFLICT DO NOTHING;`, table, kStr.String(), vStr.String()))
+	query.WriteString(fmt.Sprintf(`INSERT INTO "%s" (%s) VALUES (%s);`, table, kStr.String(), vStr.String()))
 
 	utils.Sugar.Infof("SQL Query: %s", query.String())
 	utils.Sugar.Infof("Values: %v", values)
@@ -302,6 +307,10 @@ func (db *Db) Update(id uuid.UUID, table string, updates interface{}) (data []ma
 		// Skip auto params or unset fields on the incoming User
 		if AutoParam[k] || SkipParam[k] || isUndeclared(fields.Field(i).Interface()) {
 			continue
+		} else if TimeParam[k] { // convert time types to String
+			if t, ok := v.(time.Time); ok {
+				v = t.Format(time.RFC3339)
+			}
 		}
 		if first {
 			query.WriteString(" ")
@@ -324,7 +333,7 @@ func (db *Db) Update(id uuid.UUID, table string, updates interface{}) (data []ma
 		query.WriteString(fmt.Sprintf("%v=$%d", k, vIdx))
 		vIdx++
 	}
-	query.WriteString(fmt.Sprintf(" WHERE id=%s RETURNING *;", id))
+	query.WriteString(fmt.Sprintf(" WHERE id='%s' RETURNING *;", id))
 
 	utils.Sugar.Infof("SQL Query: %s", query.String())
 	utils.Sugar.Infof("Values: %v", values)

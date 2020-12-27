@@ -1,10 +1,7 @@
 package models
 
 import (
-	"encoding/json"
 	"fmt"
-	"io/ioutil"
-	"net/http"
 	"time"
 
 	"github.com/UN0wen/pricewatch-vn/server/db"
@@ -39,8 +36,9 @@ type User struct {
 
 // UserQuery represents all of the rows the user can be queried over
 type UserQuery struct {
-	ID    uuid.UUID
-	email string
+	ID           uuid.UUID
+	Email        string
+	TimeLoggedIn time.Time
 }
 
 // NewUserTable creates a new table in the database for users.
@@ -70,20 +68,6 @@ func NewUserTable(db *db.Db) (userTable UserTable, err error) {
 	return
 }
 
-// NewUser is used to create a new user object from an incoming HTTP request.
-// It takes in the HTTP request in JSON format.
-// It returns the user constructed and an error if one exists.
-func NewUser(r *http.Request) (user User, err error) {
-	b, err := ioutil.ReadAll(r.Body)
-	defer r.Body.Close()
-	if err != nil {
-		err = errors.Wrapf(err, "Couldn't read request body")
-	}
-	// Converts JSON to user
-	json.Unmarshal(b, &user)
-	return user, err
-}
-
 // GenerateJWT creates a JSON Web Token for a user based on the id,
 // with an expiration time of 1 day
 // It returns the token string
@@ -97,6 +81,8 @@ func (user *User) GenerateJWT() string {
 	return tokenString
 }
 
+// Login accepts a user object and checks that the user's email is in the database
+// and that the passwords match
 func (table *UserTable) Login(user User) (found User, err error) {
 	if !govalidator.IsEmail(user.Email) {
 		err = errors.New("Please provide a valid email address")
@@ -105,7 +91,7 @@ func (table *UserTable) Login(user User) (found User, err error) {
 		err = errors.New("Password can't be blank")
 		return
 	}
-	query := UserQuery{email: user.Email}
+	query := UserQuery{Email: user.Email}
 
 	data, err := table.connection.Get(query, "", "=", UserTableName)
 
@@ -127,6 +113,18 @@ func (table *UserTable) Login(user User) (found User, err error) {
 	if err != nil {
 		err = errors.Wrapf(err, "Provided password does not match")
 	}
+
+	// Update time logged in
+
+	timeNow := time.Now()
+
+	updated, err := table.connection.Update(found.ID, UserTableName, UserQuery{TimeLoggedIn: timeNow})
+	if err != nil {
+		err = errors.Wrapf(err, "Error while updating time logged in")
+		return
+	}
+
+	err = mapstructure.Decode(updated[0], &found)
 	return
 }
 
