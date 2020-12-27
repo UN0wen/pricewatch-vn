@@ -78,6 +78,43 @@ func GetUser(w http.ResponseWriter, r *http.Request) {
 	}
 }
 
+// UpdateUser updates an user password/username
+// It returns the updated user
+func UpdateUser(w http.ResponseWriter, r *http.Request) {
+	data := &payloads.UserRequest{}
+	if err := render.Bind(r, data); err != nil {
+		render.Render(w, r, payloads.ErrInvalidRequest(err))
+		return
+	}
+	user := data.User
+
+	userID := r.Context().Value("userID").(uuid.UUID)
+	updatedUser, err := models.LayerInstance().User.Update(userID, *user)
+
+	if err != nil {
+		render.Render(w, r, payloads.ErrInternalError(err))
+		return
+	}
+
+	if err := render.Render(w, r, payloads.NewUserResponse(&updatedUser)); err != nil {
+		render.Render(w, r, payloads.ErrRender(err))
+		return
+	}
+}
+
+// DeleteUser deletes a user from the database
+func DeleteUser(w http.ResponseWriter, r *http.Request) {
+	userID := r.Context().Value("userID").(uuid.UUID)
+	err := models.LayerInstance().User.Delete(userID)
+
+	if err != nil {
+		render.Render(w, r, payloads.ErrInternalError(err))
+		return
+	}
+
+	render.Status(r, http.StatusOK)
+}
+
 // CreateUser creates a new User and returns it
 // back to the client as an acknowledgement. It generates a new
 // uuid when called.
@@ -90,14 +127,13 @@ func CreateUser(w http.ResponseWriter, r *http.Request) {
 
 	// Creating a new User
 	user := data.User
-	user.ID, _ = uuid.NewUUID()
-	err := models.LayerInstance().User.Insert(*user)
+	userID, err := models.LayerInstance().User.Insert(*user)
 
 	if err != nil {
 		render.Render(w, r, payloads.ErrInvalidRequest(err))
 		return
 	}
-
+	user.ID = userID
 	render.Status(r, http.StatusCreated)
 	render.Render(w, r, payloads.NewUserResponse(user))
 }

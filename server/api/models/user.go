@@ -144,7 +144,9 @@ func (table *UserTable) GetByID(id uuid.UUID) (user User, err error) {
 }
 
 // Insert adds a new user into the table.
-func (table *UserTable) Insert(user User) (err error) {
+func (table *UserTable) Insert(user User) (userID uuid.UUID, err error) {
+	userID, _ = uuid.NewUUID()
+	user.ID = userID
 	err = table.connection.Insert(UserTableName, user)
 	if err != nil {
 		err = errors.Wrapf(err, "Insertion query failed for new user: %s", user)
@@ -154,6 +156,10 @@ func (table *UserTable) Insert(user User) (err error) {
 
 // Update will update the user row with an incoming user
 func (table *UserTable) Update(id uuid.UUID, newUser User) (updated User, err error) {
+	// Unchangable fields
+	newUser.Email = ""
+	newUser.ID = id
+
 	data, err := table.connection.Update(id, UserTableName, newUser)
 	if err != nil {
 		return

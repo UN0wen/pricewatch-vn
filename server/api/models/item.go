@@ -22,7 +22,7 @@ type ItemTable struct {
 // Item represents a single row in the ItemTable
 type Item struct {
 	ID           uuid.UUID `valid:"required" json:"id"`
-	Name         string    `valid:"-" json:"name"`
+	Name         string    `valid:"required" json:"name"`
 	Description  string    `valid:"required" json:"description"`
 	ImageURL     string    `valid:"required" json:"imageurl"`
 	URL          string    `valid:"required" json:"url"`
@@ -95,7 +95,9 @@ func (table *ItemTable) GetByID(id uuid.UUID) (item Item, err error) {
 }
 
 // Insert adds a new item into the table.
-func (table *ItemTable) Insert(item Item) (err error) {
+func (table *ItemTable) Insert(item Item) (itemID uuid.UUID, err error) {
+	itemID, _ = uuid.NewUUID()
+	item.ID = itemID
 	err = table.connection.Insert(ItemTableName, item)
 	if err != nil {
 		err = errors.Wrapf(err, "Insertion query failed for new item: %s", item)

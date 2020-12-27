@@ -15,9 +15,18 @@ import (
 
 func createUserRoutes(r *chi.Mux) {
 	r.Route("/api/users", func(r chi.Router) {
-		r.With(middleware.Authenticate).With(controllers.SessionCtx).Get("/", controllers.GetUser) // Get /users
+		r.With(middleware.Authenticate).With(controllers.SessionCtx).Get("/", controllers.GetUser)       // Get /users
+		r.With(middleware.Authenticate).With(controllers.SessionCtx).Put("/", controllers.UpdateUser)    // Update
+		r.With(middleware.Authenticate).With(controllers.SessionCtx).Delete("/", controllers.DeleteUser) // Delete
 		r.Post("/signup", controllers.CreateUser)
 		r.Post("/login", controllers.LoginUser)
+	})
+}
+
+func createItemRoutes(r *chi.Mux) {
+	r.Route("/api/items", func(r chi.Router) {
+		r.With(middleware.Authenticate).With(controllers.SessionCtx).Get("/", controllers.GetItem)     // Get /users
+		r.With(middleware.Authenticate).With(controllers.SessionCtx).Post("/", controllers.CreateItem) // Update
 	})
 }
 
@@ -32,6 +41,7 @@ func NewRouter() *chi.Mux {
 	router.Use(render.SetContentType(render.ContentTypeJSON))
 
 	createUserRoutes(router)
+	createItemRoutes(router)
 	spa := spaHandler{staticPath: "build", indexPath: "index.html"}
 	router.Handle("/*", spa)
 	return router
