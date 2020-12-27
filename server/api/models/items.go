@@ -59,7 +59,7 @@ func NewItemTable(db *db.Db) (itemTable ItemTable, err error) {
 		)`, ItemTableName)
 	// Create the actual table
 	if err = itemTable.connection.CreateTable(query); err != nil {
-		err = errors.Wrapf(err, "Could not initialize table: %s", ItemTableName)
+		err = errors.Wrapf(err, "Could not initialize table %s", ItemTableName)
 	}
 	return
 }

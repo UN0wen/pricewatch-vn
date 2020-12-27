@@ -6,6 +6,7 @@ require (
 	github.com/asaskevich/govalidator v0.0.0-20200907205600-7a23bdc65eef
 	github.com/dgrijalva/jwt-go v3.2.0+incompatible
 	github.com/go-chi/chi v1.5.1
+	github.com/go-chi/render v1.0.1
 	github.com/gofrs/uuid v3.3.0+incompatible // indirect
 	github.com/google/uuid v1.1.2
 	github.com/jackc/pgmock v0.0.0-20201204152224-4fe30f7445fd // indirect

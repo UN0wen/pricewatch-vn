@@ -26,3 +26,6 @@ var DBHost = GetVar("DB_HOST", "localhost")
 
 // DBName for the production/development database
 var DBName = GetVar("DB_NAME", "pricewatch")
+
+// ServerPort is the port the server listens on
+var ServerPort = GetVar("SERVER_PORT", "8080")

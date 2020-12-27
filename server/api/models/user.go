@@ -9,10 +9,12 @@ import (
 
 	"github.com/UN0wen/pricewatch-vn/server/db"
 	"github.com/UN0wen/pricewatch-vn/server/utils"
+	"github.com/asaskevich/govalidator"
 	"github.com/dgrijalva/jwt-go"
 	"github.com/google/uuid"
 	"github.com/mitchellh/mapstructure"
 	"github.com/pkg/errors"
+	"golang.org/x/crypto/bcrypt"
 )
 
 // UserTableName is the name of the user table in the db
@@ -31,13 +33,41 @@ type User struct {
 	Username     string    `valid:"required" json:"username"`
 	Email        string    `valid:"required" json:"email"`
 	Password     string    `valid:"required" json:"password"`
-	TimeCreated  time.Time `valid:"-" json:"time_created"`
-	TimeLoggedIn time.Time `valid:"-" json:"time_logged_in"`
+	TimeCreated  time.Time `valid:"-" json:"time_created,omitempty"`
+	TimeLoggedIn time.Time `valid:"-" json:"time_logged_in,omitempty"`
 }
 
 // UserQuery represents all of the rows the user can be queried over
 type UserQuery struct {
-	ID uuid.UUID
+	ID    uuid.UUID
+	email string
+}
+
+// NewUserTable creates a new table in the database for users.
+// It takes a reference to an open db connection and returns the constructed table
+func NewUserTable(db *db.Db) (userTable UserTable, err error) {
+	// Ensure connection is alive
+	if db == nil {
+		err = errors.New("Invalid database connection")
+		return
+	}
+	userTable.connection = db
+	// Construct query
+	query := fmt.Sprintf(`
+	CREATE TABLE IF NOT EXISTS %s (
+			id uuid NOT NULL, 
+			username TEXT NOT NULL,
+			email TEXT NOT NULL UNIQUE, 
+			password TEXT NOT NULL,
+			timeCreated TIMESTAMPTZ NOT NULL DEFAULT now(), 
+			timeLoggedIn TIMESTAMPTZ NOT NULL DEFAULT now(), 
+			PRIMARY KEY (id)
+		)`, UserTableName)
+	// Create the actual table
+	if err = userTable.connection.CreateTable(query); err != nil {
+		err = errors.Wrapf(err, "Could not initialize table %s", UserTableName)
+	}
+	return
 }
 
 // NewUser is used to create a new user object from an incoming HTTP request.
@@ -67,29 +97,35 @@ func (user *User) GenerateJWT() string {
 	return tokenString
 }
 
-// NewUserTable creates a new table in the database for users.
-// It takes a reference to an open db connection and returns the constructed table
-func NewUserTable(db *db.Db) (userTable UserTable, err error) {
-	// Ensure connection is alive
-	if db == nil {
-		err = errors.New("Invalid database connection")
+func (table *UserTable) Login(user User) (found User, err error) {
+	if !govalidator.IsEmail(user.Email) {
+		err = errors.New("Please provide a valid email address")
+		return
+	} else if len(user.Password) == 0 {
+		err = errors.New("Password can't be blank")
 		return
 	}
-	userTable.connection = db
-	// Construct query
-	query := fmt.Sprintf(`
-	CREATE TABLE IF NOT EXISTS %s (
-			id uuid NOT NULL, 
-			username TEXT NOT NULL,
-			email TEXT NOT NULL UNIQUE, 
-			password TEXT NOT NULL,
-			timeCreated TIMESTAMPTZ NOT NULL DEFAULT now(), 
-			timeLoggedIn TIMESTAMPTZ NOT NULL DEFAULT now(), 
-			PRIMARY KEY (id)
-		)`, UserTableName)
-	// Create the actual table
-	if err = userTable.connection.CreateTable(query); err != nil {
-		err = errors.Wrapf(err, "Could not initialize table: %s", UserTableName)
+	query := UserQuery{email: user.Email}
+
+	data, err := table.connection.Get(query, "", "=", UserTableName)
+
+	if err != nil {
+		err = errors.Wrapf(err, "Error querying user with email %s", user.Email)
+		return
+	} else if data == nil {
+		err = errors.New("No user with this email address can be found")
+		return
+	}
+
+	err = mapstructure.Decode(data[0], &found)
+	if err != nil {
+		return
+	}
+
+	// Compare incoming password with db password
+	err = bcrypt.CompareHashAndPassword([]byte(found.Password), []byte(user.Password))
+	if err != nil {
+		err = errors.Wrapf(err, "Provided password does not match")
 	}
 	return
 }

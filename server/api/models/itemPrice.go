@@ -48,11 +48,11 @@ func NewItemPriceTable(db *db.Db) (itemPriceTable ItemPriceTable, err error) {
 			id uuid NOT NULL REFERENCES %s(id) ON DELETE CASCADE, 
 			time TEXT NOT NULL,
 			price INT,
-			PRIMARY KEY (id, time),
+			PRIMARY KEY (id, time)
 		)`, ItemPriceTableName, ItemTableName)
 	// Create the actual table
 	if err = itemPriceTable.connection.CreateTable(query); err != nil {
-		err = errors.Wrapf(err, "Could not initialize table: %s", ItemPriceTableName)
+		err = errors.Wrapf(err, "Could not initialize table %s", ItemPriceTableName)
 	}
 	return
 }

@@ -102,7 +102,7 @@ func (db *Db) CreateTable(query string) (err error) {
 	utils.Sugar.Infof("SQL Query: %s", query)
 
 	if _, err = db.Pool.Exec(context.Background(), query); err != nil {
-		err = errors.Wrapf(err, "Classes Table creation query failed")
+		err = errors.Wrapf(err, "Table creation query failed")
 	}
 
 	return

@@ -11,7 +11,7 @@ import (
 
 // ItemTableName is the name of the user table in the db
 const (
-	UserItemTableName = "items"
+	UserItemTableName = "useritems"
 )
 
 // ItemTable represents the connection to the db instance
@@ -45,12 +45,12 @@ func NewUserItemTable(db *db.Db) (userItemTable UserItemTable, err error) {
 	CREATE TABLE IF NOT EXISTS %s (
 			userid uuid NOT NULL REFERENCES %s (id) ON DELETE CASCADE,
 			itemid uuid NOT NULL REFERENCES %s (id) ON DELETE CASCADE,
-			PRIMARY KEY (userid, itemid),
+			PRIMARY KEY (userid, itemid)
 			
 		)`, UserItemTableName, UserTableName, ItemTableName)
 	// Create the actual table
 	if err = userItemTable.connection.CreateTable(query); err != nil {
-		err = errors.Wrapf(err, "Could not initialize table: %s", UserItemTableName)
+		err = errors.Wrapf(err, "Could not initialize table %s", UserItemTableName)
 	}
 	return
 }
