@@ -169,9 +169,7 @@ func (table *UserTable) Update(id uuid.UUID, newUser User) (updated User, err er
 }
 
 // Delete permanently removes the user with uuid from table
-// TODO: finish
 func (table *UserTable) Delete(id uuid.UUID) (err error) {
-	// TODO: delete all from user-product table
 	// Delete user
 	err = table.connection.Delete(id, UserTableName)
 	if err != nil {

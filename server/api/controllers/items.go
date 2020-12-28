@@ -1,42 +1,54 @@
 package controllers
 
 import (
-	"errors"
 	"net/http"
 
 	"github.com/UN0wen/pricewatch-vn/server/api/models"
 	"github.com/UN0wen/pricewatch-vn/server/api/payloads"
+	"github.com/go-chi/chi"
 	"github.com/go-chi/render"
-	"github.com/google/uuid"
 )
 
 // GetItem returns a specific Item with id.
 func GetItem(w http.ResponseWriter, r *http.Request) {
-	data := &payloads.ItemRequest{}
-	if err := render.Bind(r, data); err != nil {
-		render.Render(w, r, payloads.ErrInvalidRequest(err))
+	var item models.Item
+	var err error
+	if itemID := chi.URLParam(r, "itemID"); itemID != "" {
+		item, err = models.LayerInstance().Item.GetByID(item.ID)
+	} else {
+		render.Render(w, r, payloads.ErrNotFound)
 		return
 	}
-	item := data.Item
-	if item.ID == uuid.Nil {
-		render.Render(w, r, payloads.ErrInvalidRequest(errors.New("No item ID provided")))
+	if err != nil {
+		render.Render(w, r, payloads.ErrNotFound)
 		return
 	}
 
-	returnedItem, err := models.LayerInstance().Item.GetByID(item.ID)
+	if err := render.Render(w, r, payloads.NewItemResponse(&item)); err != nil {
+		render.Render(w, r, payloads.ErrRender(err))
+		return
+	}
+}
+
+// GetItems returns all items.
+func GetItems(w http.ResponseWriter, r *http.Request) {
+	items, err := models.LayerInstance().Item.Get(models.ItemQuery{}, "", "")
 
 	if err != nil {
 		render.Render(w, r, payloads.ErrInternalError(err))
 		return
 	}
 
-	if err := render.Render(w, r, payloads.NewItemResponse(&returnedItem)); err != nil {
+	if err := render.RenderList(w, r, payloads.NewItemListResponse(items)); err != nil {
 		render.Render(w, r, payloads.ErrRender(err))
 		return
 	}
 }
 
 // CreateItem creates a new item and then return the item if it is successful
+// It expects an URL that it can use to parse into an item object
+// TODO: ADD PARSING LOGIC HERE
+// TODO: Add item to useritems
 func CreateItem(w http.ResponseWriter, r *http.Request) {
 	data := &payloads.ItemRequest{}
 	if err := render.Bind(r, data); err != nil {

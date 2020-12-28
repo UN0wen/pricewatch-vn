@@ -25,7 +25,8 @@ func createUserRoutes(r *chi.Mux) {
 
 func createItemRoutes(r *chi.Mux) {
 	r.Route("/api/items", func(r chi.Router) {
-		r.With(middleware.Authenticate).With(controllers.SessionCtx).Get("/", controllers.GetItem)     // Get /users
+		r.Get("/", controllers.GetItems)
+		r.Get("/{itemID}", controllers.GetItem)                                                        // Get /users
 		r.With(middleware.Authenticate).With(controllers.SessionCtx).Post("/", controllers.CreateItem) // Update
 	})
 }

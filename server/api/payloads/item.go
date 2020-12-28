@@ -5,11 +5,13 @@ import (
 	"net/http"
 
 	"github.com/UN0wen/pricewatch-vn/server/api/models"
+	"github.com/go-chi/render"
 )
 
 // ItemRequest is the request payload for the Item data model
 type ItemRequest struct {
 	*models.Item
+	limit int64
 }
 
 // Bind is the postprocessing for the ItemRequest after the request is unmarshalled
@@ -25,11 +27,21 @@ type ItemResponse struct {
 	*models.Item
 }
 
-// NewItemResponse generate a Response for User object
+// NewItemResponse generate a Response for Item object
 func NewItemResponse(item *models.Item) *ItemResponse {
 	resp := &ItemResponse{Item: item}
 
 	return resp
+}
+
+// NewItemListResponse generates a list of renders for Items
+func NewItemListResponse(items []models.Item) []render.Renderer {
+	list := []render.Renderer{}
+	for i := range items {
+		list = append(list, NewItemResponse(&items[i]))
+	}
+
+	return list
 }
 
 // Render is preprocessing before the response is marshalled
