@@ -162,7 +162,7 @@ func LoginUser(w http.ResponseWriter, r *http.Request) {
 	var sessionID uuid.UUID
 	// Try to get current session
 	// TODO: cache
-	sessions, err := models.LayerInstance().Session.Get(models.SessionQuery{UserID: found.ID}, "", "=")
+	sessions, err := models.LayerInstance().Session.Get(models.SessionQuery{UserID: found.ID})
 
 	// Session not found, create new session
 	if err != nil || len(sessions) == 0 {

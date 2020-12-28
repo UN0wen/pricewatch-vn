@@ -71,8 +71,8 @@ func NewSessionTable(db *db.Db) (sessionTable SessionTable, err error) {
 }
 
 // Get gets stuffs
-func (table *SessionTable) Get(sessionQuery SessionQuery, op, compareOp string) (sessions []Session, err error) {
-	allData, err := table.connection.Get(sessionQuery, op, compareOp, SessionView)
+func (table *SessionTable) Get(sessionQuery SessionQuery) (sessions []Session, err error) {
+	allData, err := table.connection.Get(db.GetOptions{Query: sessionQuery, TableName: SessionTableName})
 	if err != nil {
 		return
 	}

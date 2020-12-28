@@ -140,19 +140,30 @@ func (db *Db) CreateView(viewName, viewQuery string) (err error) {
 
 // Simple ORM to wrap database calls
 
+// GetOptions is a list of options to call db.Get with
+type GetOptions struct {
+	Query      interface{} // The query to use
+	Op         string      // AND / OR
+	CompareOp  string      // The comparison operator to use (default =)
+	TableName  string      // Name of table to query from
+	Order      string      // ASC or DESC
+	OrderQuery string      // Columns to order by
+	Limit      int64       // Number of rows to select
+}
+
 // Get attempts to provide a generalized search through the specified table based on the provided queries.
 // It takes a query for the queryable fields, and an operator such as "AND" or "OR" to define the context of the search. It takes in a table name to act on.
 // It returns all the data for all found objects and an error if one exists.
-func (db *Db) Get(mQuery interface{}, op, compareOp, table string) (objects []map[string]interface{}, err error) {
+func (db *Db) Get(options GetOptions) (objects []map[string]interface{}, err error) {
 	var query bytes.Buffer
-	if compareOp == "" {
-		compareOp = "="
+	if options.CompareOp == "" {
+		options.CompareOp = "="
 	}
 
-	query.WriteString(fmt.Sprintf("SELECT * FROM %s", table))
+	query.WriteString(fmt.Sprintf("SELECT * FROM %s", options.TableName))
 
 	// Use reflection to analyze object fields
-	fields := reflect.ValueOf(mQuery)
+	fields := reflect.ValueOf(options.Query)
 	first := true
 	var values []interface{}
 	vIdx := 1
@@ -164,17 +175,26 @@ func (db *Db) Get(mQuery interface{}, op, compareOp, table string) (objects []ma
 				query.WriteString(" WHERE ")
 				first = false
 			} else {
-				if op != "" {
-					query.WriteString(fmt.Sprintf(" %s ", op))
+				if options.Op != "" {
+					query.WriteString(fmt.Sprintf(" %s ", options.Op))
 				}
 			}
 			k := strings.ToLower(fields.Type().Field(i).Name)
 			v = fmt.Sprintf("%v", v)
 			values = append(values, v)
-			query.WriteString(fmt.Sprintf("%s%s$%d", k, compareOp, vIdx))
+			query.WriteString(fmt.Sprintf("%s%s$%d", k, options.CompareOp, vIdx))
 			vIdx++
 		}
 	}
+
+	if options.OrderQuery != "" && options.Order != "" {
+		query.WriteString(fmt.Sprintf(" ORDER BY %s %s", options.OrderQuery, options.Order))
+	}
+
+	if options.Limit != 0 {
+		query.WriteString(fmt.Sprintf(" LIMIT %d", options.Limit))
+	}
+
 	query.WriteString(";")
 
 	utils.Sugar.Infof("SQL Query: %s", query.String())
@@ -194,7 +214,7 @@ func (db *Db) Get(mQuery interface{}, op, compareOp, table string) (objects []ma
 // It returns the data for the found object, or an error if one exists.
 func (db *Db) GetByID(id uuid.UUID, table string) (data map[string]interface{}, err error) {
 	query := idQuery{ID: id}
-	objs, err := db.Get(query, "", "=", table)
+	objs, err := db.Get(GetOptions{Query: query, TableName: table, Limit: 1})
 	if err != nil {
 		err = errors.Wrapf(err, "Search error")
 		return

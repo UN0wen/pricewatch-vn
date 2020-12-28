@@ -56,8 +56,8 @@ func NewUserItemTable(db *db.Db) (userItemTable UserItemTable, err error) {
 }
 
 // Get gets stuffs
-func (table *UserItemTable) Get(userItemQuery UserItemQuery, op, compareOp string) (userItems []UserItem, err error) {
-	allData, err := table.connection.Get(userItemQuery, op, compareOp, UserItemTableName)
+func (table *UserItemTable) Get(userItemQuery UserItemQuery) (userItems []UserItem, err error) {
+	allData, err := table.connection.Get(db.GetOptions{Query: userItemQuery, TableName: UserItemTableName})
 	if err != nil {
 		return
 	}

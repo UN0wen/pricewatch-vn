@@ -7,14 +7,18 @@ import (
 	"github.com/UN0wen/pricewatch-vn/server/api/payloads"
 	"github.com/go-chi/chi"
 	"github.com/go-chi/render"
+	"github.com/google/uuid"
 )
 
 // GetItem returns a specific Item with id.
 func GetItem(w http.ResponseWriter, r *http.Request) {
 	var item models.Item
 	var err error
-	if itemID := chi.URLParam(r, "itemID"); itemID != "" {
-		item, err = models.LayerInstance().Item.GetByID(item.ID)
+	itemIDParam := chi.URLParam(r, "itemID")
+	itemID, err := uuid.Parse(itemIDParam)
+
+	if err != nil {
+		item, err = models.LayerInstance().Item.GetByID(itemID)
 	} else {
 		render.Render(w, r, payloads.ErrNotFound)
 		return
@@ -32,7 +36,7 @@ func GetItem(w http.ResponseWriter, r *http.Request) {
 
 // GetItems returns all items.
 func GetItems(w http.ResponseWriter, r *http.Request) {
-	items, err := models.LayerInstance().Item.Get(models.ItemQuery{}, "", "")
+	items, err := models.LayerInstance().Item.Get(models.ItemQuery{})
 
 	if err != nil {
 		render.Render(w, r, payloads.ErrInternalError(err))

@@ -58,8 +58,16 @@ func NewItemPriceTable(db *db.Db) (itemPriceTable ItemPriceTable, err error) {
 }
 
 // Get gets stuffs
-func (table *ItemPriceTable) Get(itemPriceQuery ItemPriceQuery, op, compareOp string) (itemPrices []ItemPrice, err error) {
-	allData, err := table.connection.Get(itemPriceQuery, op, compareOp, ItemPriceTableName)
+func (table *ItemPriceTable) Get(itemPriceQuery ItemPriceQuery, orderBy string, limit int64) (itemPrices []ItemPrice, err error) {
+	options := db.GetOptions{
+		Query:      itemPriceQuery,
+		TableName:  ItemPriceTableName,
+		OrderQuery: "time",
+		Order:      orderBy,
+		Limit:      limit,
+	}
+
+	allData, err := table.connection.Get(options)
 	if err != nil {
 		return
 	}
@@ -70,19 +78,6 @@ func (table *ItemPriceTable) Get(itemPriceQuery ItemPriceQuery, op, compareOp st
 			return
 		}
 		itemPrices = append(itemPrices, itemPrice)
-	}
-	return
-}
-
-// GetByID finds an item by id
-func (table *ItemPriceTable) GetByID(id uuid.UUID) (itemPrice ItemPrice, err error) {
-	data, err := table.connection.GetByID(id, ItemPriceTableName)
-	if err != nil {
-		return
-	}
-	err = mapstructure.Decode(data, &itemPrice)
-	if err != nil {
-		err = errors.Wrapf(err, "Get query failed for itemprice with id: %s", id)
 	}
 	return
 }

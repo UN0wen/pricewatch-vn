@@ -14,7 +14,7 @@ import (
 )
 
 func createUserRoutes(r *chi.Mux) {
-	r.Route("/api/users", func(r chi.Router) {
+	r.Route("/api/user", func(r chi.Router) {
 		r.With(middleware.Authenticate).With(controllers.SessionCtx).Get("/", controllers.GetUser)       // Get /users
 		r.With(middleware.Authenticate).With(controllers.SessionCtx).Put("/", controllers.UpdateUser)    // Update
 		r.With(middleware.Authenticate).With(controllers.SessionCtx).Delete("/", controllers.DeleteUser) // Delete
@@ -24,10 +24,12 @@ func createUserRoutes(r *chi.Mux) {
 }
 
 func createItemRoutes(r *chi.Mux) {
-	r.Route("/api/items", func(r chi.Router) {
-		r.Get("/", controllers.GetItems)
+	r.Get("/api/items", controllers.GetItems)
+	r.Route("/api/item", func(r chi.Router) {
+		r.With(middleware.Authenticate).With(controllers.SessionCtx).Post("/", controllers.CreateItem) // Create
 		r.Get("/{itemID}", controllers.GetItem)                                                        // Get /users
-		r.With(middleware.Authenticate).With(controllers.SessionCtx).Post("/", controllers.CreateItem) // Update
+		r.Get("/{itemID}/price", controllers.GetPrice)
+		r.Get("/{itemID}/prices", controllers.GetPrices)
 	})
 }
 

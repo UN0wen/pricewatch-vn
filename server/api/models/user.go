@@ -78,7 +78,7 @@ func (table *UserTable) Login(user User) (found User, err error) {
 	}
 	query := UserQuery{Email: user.Email}
 
-	data, err := table.connection.Get(query, "", "=", UserTableName)
+	data, err := table.connection.Get(db.GetOptions{Query: query, TableName: UserTableName})
 
 	if err != nil {
 		err = errors.Wrapf(err, "Error querying user with email %s", user.Email)
@@ -114,8 +114,8 @@ func (table *UserTable) Login(user User) (found User, err error) {
 }
 
 // Get gets stuffs
-func (table *UserTable) Get(userQuery UserQuery, op, compareOp string) (users []User, err error) {
-	allData, err := table.connection.Get(userQuery, op, compareOp, UserTableName)
+func (table *UserTable) Get(userQuery UserQuery) (users []User, err error) {
+	allData, err := table.connection.Get(db.GetOptions{Query: userQuery, TableName: UserTableName})
 	if err != nil {
 		return
 	}

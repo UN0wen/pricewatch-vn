@@ -65,8 +65,8 @@ func NewItemTable(db *db.Db) (itemTable ItemTable, err error) {
 }
 
 // Get gets stuffs
-func (table *ItemTable) Get(itemQuery ItemQuery, op, compareOp string) (items []Item, err error) {
-	allData, err := table.connection.Get(itemQuery, op, compareOp, ItemTableName)
+func (table *ItemTable) Get(itemQuery ItemQuery) (items []Item, err error) {
+	allData, err := table.connection.Get(db.GetOptions{Query: itemQuery, TableName: ItemTableName})
 	if err != nil {
 		return
 	}
