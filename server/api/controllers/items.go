@@ -2,9 +2,11 @@ package controllers
 
 import (
 	"net/http"
+	"net/url"
 
 	"github.com/UN0wen/pricewatch-vn/server/api/models"
 	"github.com/UN0wen/pricewatch-vn/server/api/payloads"
+	"github.com/UN0wen/pricewatch-vn/server/scraper"
 	"github.com/go-chi/chi"
 	"github.com/go-chi/render"
 	"github.com/google/uuid"
@@ -51,7 +53,6 @@ func GetItems(w http.ResponseWriter, r *http.Request) {
 
 // CreateItem creates a new item and then return the item if it is successful
 // It expects an URL that it can use to parse into an item object
-// TODO: ADD PARSING LOGIC HERE
 // TODO: Add item to useritems
 func CreateItem(w http.ResponseWriter, r *http.Request) {
 	data := &payloads.ItemRequest{}
@@ -60,6 +61,24 @@ func CreateItem(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	item := data.Item
+
+	path, err := url.Parse(item.URL)
+	if err != nil {
+		render.Render(w, r, payloads.ErrInvalidRequest(err))
+		return
+	}
+
+	// Get new Item
+	if correspondingScraper, ok := scraper.Instance().Scrapers[path.Host]; ok {
+		*item, err = correspondingScraper.ScrapeInfo(path)
+		if err != nil {
+			render.Render(w, r, payloads.ErrInternalError(err))
+			return
+		}
+	} else {
+		render.Render(w, r, payloads.ErrNotImplemented)
+		return
+	}
 
 	itemID, err := models.LayerInstance().Item.Insert(*item)
 	if err != nil {

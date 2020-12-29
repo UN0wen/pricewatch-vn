@@ -24,6 +24,7 @@ type ErrResponse struct {
 	ErrorText  string `json:"error,omitempty"` // application-level error message, for debugging
 }
 
+// Render is required to implement the Renderer interface
 func (e *ErrResponse) Render(w http.ResponseWriter, r *http.Request) error {
 	render.Status(r, e.HTTPStatusCode)
 	return nil
@@ -68,6 +69,10 @@ func ErrInternalError(err error) render.Renderer {
 		ErrorText:      err.Error(),
 	}
 }
+
+// ErrNotImplemented is a response payload with status code 501.
+// This error is for creating items without the corresponding scraper
+var ErrNotImplemented = &ErrResponse{HTTPStatusCode: 501, StatusText: "This website is not supported."}
 
 // ErrNotFound is a standard response for a 404 code
 var ErrNotFound = &ErrResponse{HTTPStatusCode: 404, StatusText: "Resource not found."}

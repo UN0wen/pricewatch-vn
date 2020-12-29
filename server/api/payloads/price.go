@@ -12,7 +12,7 @@ type ItemPriceResponse struct {
 	*models.ItemPrice
 }
 
-// NewItemResponse generate a Response for Item object
+// NewItemPriceResponse generate a Response for Item object
 func NewItemPriceResponse(itemPrice *models.ItemPrice) *ItemPriceResponse {
 	resp := &ItemPriceResponse{ItemPrice: itemPrice}
 
