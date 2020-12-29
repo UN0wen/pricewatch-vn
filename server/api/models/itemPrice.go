@@ -22,15 +22,18 @@ type ItemPriceTable struct {
 
 // ItemPrice represents a single row in the ItemPriceTable
 type ItemPrice struct {
-	ID    uuid.UUID `valid:"required" json:"id"`
-	Time  time.Time `valid:"required" json:"time"`
-	Price int64     `valid:"required" json:"price"`
+	ID        uuid.UUID `valid:"required" json:"id"`
+	Time      time.Time `valid:"required" json:"time"`
+	Price     int64     `valid:"required" json:"price"`
+	Available bool      `valid:"-" json:"available"`
 }
 
 // ItemPriceQuery represents all of the rows the item can be queried over
 type ItemPriceQuery struct {
-	ID   uuid.UUID
-	Time time.Time
+	ID        uuid.UUID
+	Time      time.Time
+	Price     int64
+	Available bool
 }
 
 // NewItemPriceTable creates a new table in the database for items.
@@ -48,6 +51,7 @@ func NewItemPriceTable(db *db.Db) (itemPriceTable ItemPriceTable, err error) {
 			id uuid NOT NULL REFERENCES %s(id) ON DELETE CASCADE, 
 			time TEXT NOT NULL,
 			price INT,
+			available BOOLEAN DEFAULT TRUE,
 			PRIMARY KEY (id, time)
 		)`, ItemPriceTableName, ItemTableName)
 	// Create the actual table

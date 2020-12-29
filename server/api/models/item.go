@@ -21,13 +21,12 @@ type ItemTable struct {
 
 // Item represents a single row in the ItemTable
 type Item struct {
-	ID           uuid.UUID `valid:"required" json:"id"`
-	Name         string    `valid:"required" json:"name"`
-	Description  string    `valid:"required" json:"description"`
-	ImageURL     string    `valid:"required" json:"imageurl"`
-	URL          string    `valid:"required" json:"url"`
-	Currency     string    `valid:"required" json:"currency"`
-	Availability bool      `valid:"-" json:"availability"`
+	ID          uuid.UUID `valid:"required" json:"id"`
+	Name        string    `valid:"required" json:"name"`
+	Description string    `valid:"required" json:"description"`
+	ImageURL    string    `valid:"required" json:"imageurl"`
+	URL         string    `valid:"required" json:"url"`
+	Currency    string    `valid:"required" json:"currency"`
 }
 
 // ItemQuery represents all of the rows the item can be queried over
@@ -54,7 +53,6 @@ func NewItemTable(db *db.Db) (itemTable ItemTable, err error) {
 			imageurl TEXT NOT NULL, 
 			url TEXT NOT NULL,
 			currency TEXT NOT NULL,
-			availability BOOLEAN DEFAULT True,
 			PRIMARY KEY (id)
 		)`, ItemTableName)
 	// Create the actual table
