@@ -64,7 +64,7 @@ func NewItemTable(db *db.Db) (itemTable ItemTable, err error) {
 
 // Get gets stuffs
 func (table *ItemTable) Get(itemQuery ItemQuery) (items []Item, err error) {
-	allData, err := table.connection.Get(db.GetOptions{Query: itemQuery, TableName: ItemTableName})
+	allData, err := table.connection.Get(db.SearchOptions{Query: itemQuery, TableName: ItemTableName})
 	if err != nil {
 		return
 	}
@@ -113,10 +113,10 @@ func (table *ItemTable) Update(id uuid.UUID, newItem Item) (updated Item, err er
 	return
 }
 
-// Delete permanently removes the item with uuid from table
-func (table *ItemTable) Delete(id uuid.UUID) (err error) {
+// DeleteByID permanently removes the item with uuid from table
+func (table *ItemTable) DeleteByID(id uuid.UUID) (err error) {
 	// cascade
-	err = table.connection.Delete(id, ItemTableName)
+	err = table.connection.DeleteByID(id, ItemTableName)
 	if err != nil {
 		err = errors.Wrapf(err, "Delete query failed for item with id: %s", id)
 	}

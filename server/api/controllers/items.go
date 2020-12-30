@@ -20,11 +20,12 @@ func GetItem(w http.ResponseWriter, r *http.Request) {
 	itemID, err := uuid.Parse(itemIDParam)
 
 	if err != nil {
-		item, err = models.LayerInstance().Item.GetByID(itemID)
-	} else {
 		render.Render(w, r, payloads.ErrNotFound)
 		return
 	}
+
+	item, err = models.LayerInstance().Item.GetByID(itemID)
+
 	if err != nil {
 		render.Render(w, r, payloads.ErrNotFound)
 		return
@@ -53,7 +54,6 @@ func GetItems(w http.ResponseWriter, r *http.Request) {
 
 // CreateItem creates a new item and then return the item if it is successful
 // It expects an URL that it can use to parse into an item object
-// TODO: Add item to useritems
 func CreateItem(w http.ResponseWriter, r *http.Request) {
 	data := &payloads.ItemRequest{}
 	if err := render.Bind(r, data); err != nil {
@@ -80,7 +80,16 @@ func CreateItem(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	// insert new item
 	itemID, err := models.LayerInstance().Item.Insert(*item)
+	if err != nil {
+		render.Render(w, r, payloads.ErrInternalError(err))
+		return
+	}
+
+	// add item to userItems
+	userID := r.Context().Value("userID").(uuid.UUID)
+	err = models.LayerInstance().UserItem.Insert(models.UserItem{UserID: userID, ItemID: itemID})
 	if err != nil {
 		render.Render(w, r, payloads.ErrInternalError(err))
 		return

@@ -10,11 +10,12 @@ import (
 // Represents the layer for the model by exposing the
 // different models' tables.
 type layer struct {
-	User      *UserTable
-	Item      *ItemTable
-	UserItem  *UserItemTable
-	ItemPrice *ItemPriceTable
-	Session   *SessionTable
+	User         *UserTable
+	Item         *ItemTable
+	UserItem     *UserItemTable
+	ItemPrice    *ItemPriceTable
+	Session      *SessionTable
+	Subscription *SubscriptionTable
 }
 
 // Singleton reference to the model layer.
@@ -48,8 +49,17 @@ func LayerInstance() *layer {
 		utils.CheckError(err)
 		sessionTable, err := NewSessionTable(&db)
 		utils.CheckError(err)
+		subscriptionTable, err := NewSubscriptionTable(&db)
+		utils.CheckError(err)
 		// Create the layer only once
-		instance = &layer{User: &userTable, Item: &itemTable, UserItem: &userItemTable, ItemPrice: &itemPriceTable, Session: &sessionTable}
+		instance = &layer{
+			User:         &userTable,
+			Item:         &itemTable,
+			UserItem:     &userItemTable,
+			ItemPrice:    &itemPriceTable,
+			Session:      &sessionTable,
+			Subscription: &subscriptionTable,
+		}
 	})
 	return instance
 }

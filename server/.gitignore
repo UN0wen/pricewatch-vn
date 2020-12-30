@@ -20,3 +20,6 @@ vendor/
 # Prod
 /build
 /bin
+
+# Debug symbols
+__debug_bin

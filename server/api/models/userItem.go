@@ -57,7 +57,7 @@ func NewUserItemTable(db *db.Db) (userItemTable UserItemTable, err error) {
 
 // Get gets stuffs
 func (table *UserItemTable) Get(userItemQuery UserItemQuery) (userItems []UserItem, err error) {
-	allData, err := table.connection.Get(db.GetOptions{Query: userItemQuery, TableName: UserItemTableName})
+	allData, err := table.connection.Get(db.SearchOptions{Query: userItemQuery, TableName: UserItemTableName, Op: "AND"})
 	if err != nil {
 		return
 	}
@@ -68,19 +68,6 @@ func (table *UserItemTable) Get(userItemQuery UserItemQuery) (userItems []UserIt
 			return
 		}
 		userItems = append(userItems, userItem)
-	}
-	return
-}
-
-// GetByID finds an item by id
-func (table *UserItemTable) GetByID(id uuid.UUID) (userItem UserItem, err error) {
-	data, err := table.connection.GetByID(id, UserItemTableName)
-	if err != nil {
-		return
-	}
-	err = mapstructure.Decode(data, &userItem)
-	if err != nil {
-		err = errors.Wrapf(err, "Get query failed for useritem with id: %s", id)
 	}
 	return
 }
@@ -104,8 +91,8 @@ func (table *UserItemTable) Update(id uuid.UUID, newUserItem UserItem) (updated 
 	return
 }
 
-// Delete permanently removes the item with uuid from table
-func (table *UserItemTable) Delete(id uuid.UUID) (err error) {
-	err = table.connection.Delete(id, UserItemTableName)
+// DeleteByID permanently removes the item with uuid from table
+func (table *UserItemTable) DeleteByID(id uuid.UUID) (err error) {
+	err = table.connection.DeleteByID(id, UserItemTableName)
 	return
 }

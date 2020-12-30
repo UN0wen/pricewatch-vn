@@ -40,19 +40,20 @@ func SessionCtx(next http.Handler) http.Handler {
 		}
 
 		if sessionID != "" {
-			id, err := uuid.Parse(sessionID)
+			var id uuid.UUID
+			id, err = uuid.Parse(sessionID)
 			if err != nil {
 				render.Render(w, r, payloads.ErrNotFound)
 				return
 			}
 			session, err = models.LayerInstance().Session.GetByID(id)
 		} else {
-			render.Render(w, r, payloads.ErrNotFound)
+			render.Render(w, r, payloads.ErrUnauthorized(err))
 			return
 		}
 
 		if err != nil {
-			render.Render(w, r, payloads.ErrNotFound)
+			render.Render(w, r, payloads.ErrUnauthorized(err))
 			return
 		}
 
@@ -63,9 +64,9 @@ func SessionCtx(next http.Handler) http.Handler {
 
 // GetUser returns a specific User.
 func GetUser(w http.ResponseWriter, r *http.Request) {
-	userID := r.Context().Value("userID")
+	userID := r.Context().Value("userID").(uuid.UUID)
 
-	user, err := models.LayerInstance().User.GetByID(userID.(uuid.UUID))
+	user, err := models.LayerInstance().User.GetByID(userID)
 
 	if err != nil {
 		render.Render(w, r, payloads.ErrInternalError(err))
@@ -105,7 +106,7 @@ func UpdateUser(w http.ResponseWriter, r *http.Request) {
 // DeleteUser deletes a user from the database
 func DeleteUser(w http.ResponseWriter, r *http.Request) {
 	userID := r.Context().Value("userID").(uuid.UUID)
-	err := models.LayerInstance().User.Delete(userID)
+	err := models.LayerInstance().User.DeleteByID(userID)
 
 	if err != nil {
 		render.Render(w, r, payloads.ErrInternalError(err))

@@ -140,8 +140,8 @@ func (db *Db) CreateView(viewName, viewQuery string) (err error) {
 
 // Simple ORM to wrap database calls
 
-// GetOptions is a list of options to call db.Get with
-type GetOptions struct {
+// SearchOptions is a list of options to call db.Get with
+type SearchOptions struct {
 	Query      interface{} // The query to use
 	Op         string      // AND / OR
 	CompareOp  string      // The comparison operator to use (default =)
@@ -154,7 +154,7 @@ type GetOptions struct {
 // Get attempts to provide a generalized search through the specified table based on the provided queries.
 // It takes a query for the queryable fields, and an operator such as "AND" or "OR" to define the context of the search. It takes in a table name to act on.
 // It returns all the data for all found objects and an error if one exists.
-func (db *Db) Get(options GetOptions) (objects []map[string]interface{}, err error) {
+func (db *Db) Get(options SearchOptions) (objects []map[string]interface{}, err error) {
 	var query bytes.Buffer
 	if options.CompareOp == "" {
 		options.CompareOp = "="
@@ -214,7 +214,7 @@ func (db *Db) Get(options GetOptions) (objects []map[string]interface{}, err err
 // It returns the data for the found object, or an error if one exists.
 func (db *Db) GetByID(id uuid.UUID, table string) (data map[string]interface{}, err error) {
 	query := idQuery{ID: id}
-	objs, err := db.Get(GetOptions{Query: query, TableName: table, Limit: 1})
+	objs, err := db.Get(SearchOptions{Query: query, TableName: table, Limit: 1})
 	if err != nil {
 		err = errors.Wrapf(err, "Search error")
 		return
@@ -362,8 +362,57 @@ func (db *Db) Update(id uuid.UUID, table string, updates interface{}) (data []ma
 	return
 }
 
-// Delete removes one row from table where id=id
-func (db *Db) Delete(id uuid.UUID, table string) (err error) {
+// Delete attempts to provide a generalized search through the specified table based on the provided queries.
+// It takes a query for the queryable fields, and an operator such as "AND" or "OR" to define the context of the search. It takes in a table name to act on.
+// It returns all the data for all found objects and an error if one exists.
+func (db *Db) Delete(options SearchOptions) (err error) {
+	var query bytes.Buffer
+	if options.CompareOp == "" {
+		options.CompareOp = "="
+	}
+
+	query.WriteString(fmt.Sprintf("DELETE FROM %s", options.TableName))
+
+	// Use reflection to analyze object fields
+	fields := reflect.ValueOf(options.Query)
+	first := true
+	var values []interface{}
+	vIdx := 1
+	for i := 0; i < fields.NumField(); i++ {
+		v := fields.Field(i).Interface()
+		// Skip fields that are not set to query on
+		if !isUndeclared(v) {
+			if first {
+				query.WriteString(" WHERE ")
+				first = false
+			} else {
+				if options.Op != "" {
+					query.WriteString(fmt.Sprintf(" %s ", options.Op))
+				}
+			}
+			k := strings.ToLower(fields.Type().Field(i).Name)
+			v = fmt.Sprintf("%v", v)
+			values = append(values, v)
+			query.WriteString(fmt.Sprintf("%s%s$%d", k, options.CompareOp, vIdx))
+			vIdx++
+		}
+	}
+
+	query.WriteString(";")
+
+	utils.Sugar.Infof("SQL Query: %s", query.String())
+	utils.Sugar.Infof("Values: %v", values)
+
+	_, err = db.Pool.Exec(context.Background(), query.String(), values...)
+	if err != nil {
+		err = errors.Wrapf(err, "Delete query failed to execute")
+		return
+	}
+	return
+}
+
+// DeleteByID removes one row from table where id=id
+func (db *Db) DeleteByID(id uuid.UUID, table string) (err error) {
 	_, err = db.GetByID(id, table)
 	if err != nil {
 		return

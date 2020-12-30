@@ -63,7 +63,7 @@ func NewItemPriceTable(db *db.Db) (itemPriceTable ItemPriceTable, err error) {
 
 // Get gets stuffs
 func (table *ItemPriceTable) Get(itemPriceQuery ItemPriceQuery, orderBy string, limit int64) (itemPrices []ItemPrice, err error) {
-	options := db.GetOptions{
+	options := db.SearchOptions{
 		Query:      itemPriceQuery,
 		TableName:  ItemPriceTableName,
 		OrderQuery: "time",
@@ -105,9 +105,9 @@ func (table *ItemPriceTable) Update(id uuid.UUID, newItemPrice ItemPrice) (updat
 	return
 }
 
-// Delete permanently removes the item with uuid from table
-func (table *ItemPriceTable) Delete(id uuid.UUID) (err error) {
-	err = table.connection.Delete(id, ItemPriceTableName)
+// DeleteByID permanently removes the item with uuid from table
+func (table *ItemPriceTable) DeleteByID(id uuid.UUID) (err error) {
+	err = table.connection.DeleteByID(id, ItemPriceTableName)
 	if err != nil {
 		err = errors.Wrapf(err, "Delete query failed for itemprice with id: %s", id)
 	}

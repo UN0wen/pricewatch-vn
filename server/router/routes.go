@@ -20,6 +20,11 @@ func createUserRoutes(r *chi.Mux) {
 		r.With(middleware.Authenticate).With(controllers.SessionCtx).Delete("/", controllers.DeleteUser) // Delete
 		r.Post("/signup", controllers.CreateUser)
 		r.Post("/login", controllers.LoginUser)
+
+		// UserItems
+		r.With(middleware.Authenticate).With(controllers.SessionCtx).Get("/item/{itemID}", controllers.GetUserItem) //
+		r.With(middleware.Authenticate).With(controllers.SessionCtx).Get("/items", controllers.GetUserItems)        //
+		r.With(middleware.Authenticate).With(controllers.SessionCtx).Post("/item", controllers.CreateUserItem)      //
 	})
 }
 

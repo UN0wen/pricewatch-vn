@@ -72,7 +72,7 @@ func NewSessionTable(db *db.Db) (sessionTable SessionTable, err error) {
 
 // Get gets stuffs
 func (table *SessionTable) Get(sessionQuery SessionQuery) (sessions []Session, err error) {
-	allData, err := table.connection.Get(db.GetOptions{Query: sessionQuery, TableName: SessionTableName})
+	allData, err := table.connection.Get(db.SearchOptions{Query: sessionQuery, TableName: SessionView})
 	if err != nil {
 		return
 	}
@@ -91,6 +91,7 @@ func (table *SessionTable) Get(sessionQuery SessionQuery) (sessions []Session, e
 func (table *SessionTable) GetByID(id uuid.UUID) (session Session, err error) {
 	data, err := table.connection.GetByID(id, SessionView)
 	if err != nil {
+		err = errors.Wrapf(err, "Get query failed for session with id: %s", id)
 		return
 	}
 	err = mapstructure.Decode(data, &session)
@@ -112,10 +113,10 @@ func (table *SessionTable) Insert(session Session) (sessionID uuid.UUID, err err
 	return
 }
 
-// Delete permanently removes the session with uuid from table
-func (table *SessionTable) Delete(id uuid.UUID) (err error) {
+// DeleteByID permanently removes the session with uuid from table
+func (table *SessionTable) DeleteByID(id uuid.UUID) (err error) {
 	// cascade
-	err = table.connection.Delete(id, SessionTableName)
+	err = table.connection.DeleteByID(id, SessionTableName)
 	if err != nil {
 		err = errors.Wrapf(err, "Delete query failed for session with id: %s", id)
 	}

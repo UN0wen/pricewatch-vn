@@ -78,7 +78,7 @@ func (table *UserTable) Login(user User) (found User, err error) {
 	}
 	query := UserQuery{Email: user.Email}
 
-	data, err := table.connection.Get(db.GetOptions{Query: query, TableName: UserTableName})
+	data, err := table.connection.Get(db.SearchOptions{Query: query, TableName: UserTableName})
 
 	if err != nil {
 		err = errors.Wrapf(err, "Error querying user with email %s", user.Email)
@@ -115,7 +115,7 @@ func (table *UserTable) Login(user User) (found User, err error) {
 
 // Get gets stuffs
 func (table *UserTable) Get(userQuery UserQuery) (users []User, err error) {
-	allData, err := table.connection.Get(db.GetOptions{Query: userQuery, TableName: UserTableName})
+	allData, err := table.connection.Get(db.SearchOptions{Query: userQuery, TableName: UserTableName})
 	if err != nil {
 		return
 	}
@@ -168,10 +168,10 @@ func (table *UserTable) Update(id uuid.UUID, newUser User) (updated User, err er
 	return
 }
 
-// Delete permanently removes the user with uuid from table
-func (table *UserTable) Delete(id uuid.UUID) (err error) {
+// DeleteByID permanently removes the user with uuid from table
+func (table *UserTable) DeleteByID(id uuid.UUID) (err error) {
 	// Delete user
-	err = table.connection.Delete(id, UserTableName)
+	err = table.connection.DeleteByID(id, UserTableName)
 	if err != nil {
 		err = errors.Wrapf(err, "Delete query failed for user with id: %s", id)
 	}
