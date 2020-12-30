@@ -23,9 +23,9 @@ type ItemPriceTable struct {
 // ItemPrice represents a single row in the ItemPriceTable
 type ItemPrice struct {
 	ID        uuid.UUID `valid:"required" json:"id"`
-	Time      time.Time `valid:"required" json:"time"`
+	Time      time.Time `valid:"-" json:"time"`
 	Price     int64     `valid:"required" json:"price"`
-	Available bool      `valid:"-" json:"available"`
+	Available bool      `valid:"required" json:"available"`
 }
 
 // ItemPriceQuery represents all of the rows the item can be queried over
@@ -49,7 +49,7 @@ func NewItemPriceTable(db *db.Db) (itemPriceTable ItemPriceTable, err error) {
 	query := fmt.Sprintf(`
 	CREATE TABLE IF NOT EXISTS %s (
 			id uuid NOT NULL REFERENCES %s(id) ON DELETE CASCADE, 
-			time TEXT NOT NULL,
+			time TIMESTAMPTZ NOT NULL DEFAULT NOW(),
 			price INT,
 			available BOOLEAN DEFAULT TRUE,
 			PRIMARY KEY (id, time)
@@ -88,7 +88,8 @@ func (table *ItemPriceTable) Get(itemPriceQuery ItemPriceQuery, orderBy string, 
 
 // Insert adds a new item into the table.
 func (table *ItemPriceTable) Insert(itemPrice ItemPrice) (err error) {
-	err = table.connection.Insert(ItemTableName, itemPrice)
+	itemPrice.Time = time.Now()
+	err = table.connection.Insert(ItemPriceTableName, itemPrice)
 	if err != nil {
 		err = errors.Wrapf(err, "Insertion query failed for new itemprice: %s", itemPrice)
 	}

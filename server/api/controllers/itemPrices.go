@@ -18,11 +18,12 @@ func GetPrice(w http.ResponseWriter, r *http.Request) {
 	itemID, err := uuid.Parse(itemIDParam)
 
 	if err != nil {
-		itemPrice, err = models.LayerInstance().ItemPrice.Get(models.ItemPriceQuery{ID: itemID}, "DESC", 1)
-	} else {
 		render.Render(w, r, payloads.ErrNotFound)
 		return
 	}
+
+	itemPrice, err = models.LayerInstance().ItemPrice.Get(models.ItemPriceQuery{ID: itemID}, "DESC", 1)
+
 	if err != nil {
 		render.Render(w, r, payloads.ErrNotFound)
 		return

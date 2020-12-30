@@ -6,7 +6,6 @@ import (
 	"strconv"
 
 	"github.com/UN0wen/pricewatch-vn/server/api/models"
-	"github.com/UN0wen/pricewatch-vn/server/utils"
 	"github.com/pkg/errors"
 )
 
@@ -52,11 +51,11 @@ func (s TikiScraper) ScrapeInfo(path *url.URL) (item models.Item, err error) {
 		if err != nil {
 			return
 		}
-		item.ImageURL = urlParsed.Host + urlParsed.Path
+		item.ImageURL = "https://" + urlParsed.Host + urlParsed.Path
 	}
 
 	// URL
-	item.URL = path.Host + path.Path
+	item.URL = "https://" + path.Host + path.Path
 
 	// Currency
 	item.Currency = "VND"
@@ -87,7 +86,6 @@ func (s TikiScraper) ScrapePrice(item models.Item) (itemPrice models.ItemPrice, 
 
 	availableString, exists := doc.Find("link[itemProp=\"availability\"]").Attr("href")
 
-	utils.Sugar.Infof("%s", availableString)
 	if exists {
 		available = availableString == InStockHTTP
 	}

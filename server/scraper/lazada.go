@@ -52,11 +52,11 @@ func (s LazadaScraper) ScrapeInfo(path *url.URL) (item models.Item, err error) {
 		if err != nil {
 			return
 		}
-		item.ImageURL = urlParsed.Host + urlParsed.Path
+		item.ImageURL = "https://" + urlParsed.Host + urlParsed.Path
 	}
 
 	// URL
-	item.URL = path.Host + path.Path
+	item.URL = "https://" + path.Host + path.Path
 
 	// Currency
 	item.Currency = "VND"

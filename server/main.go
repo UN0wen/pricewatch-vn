@@ -8,6 +8,7 @@ import (
 	"github.com/UN0wen/pricewatch-vn/server/api/models"
 	"github.com/UN0wen/pricewatch-vn/server/router"
 	"github.com/UN0wen/pricewatch-vn/server/scraper"
+	"github.com/UN0wen/pricewatch-vn/server/services"
 	"github.com/UN0wen/pricewatch-vn/server/utils"
 )
 
@@ -34,6 +35,8 @@ func main() {
 		WriteTimeout: 10 * time.Second,
 	}
 
+	err := services.UpdateAll()
+	utils.CheckError(err)
 	utils.Sugar.Infof("Started server on port %s", utils.ServerPort)
 	utils.Sugar.Fatal(server.ListenAndServe())
 }

@@ -32,6 +32,7 @@ var (
 		"timecreated":  true,
 		"timeloggedin": true,
 		"expiresafter": true,
+		"time":         true,
 	}
 )
 
@@ -256,6 +257,10 @@ func (db *Db) Insert(table, model interface{}) (err error) {
 		// Skip auto params and skippable params
 		if AutoParam[k] || SkipParam[k] {
 			continue
+		} else if TimeParam[k] { // convert time types to String
+			if t, ok := v.(time.Time); ok {
+				v = t.Format(time.RFC3339)
+			}
 		}
 		if first {
 			first = false
