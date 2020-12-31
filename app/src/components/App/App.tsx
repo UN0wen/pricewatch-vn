@@ -16,15 +16,19 @@ import axios from 'axios';
 function App() {
   axios.defaults.baseURL = 'http://172.20.204.69:8080/api';
   const jwt = SessionContext.getJWT()
-  axios.get('/user', {
 
-  }).then((response) => {
-    console.log(response.data);
-    console.log(response.status);
-    console.log(response.statusText);
-    console.log(response.headers);
-    console.log(response.config);
-  })
+  if (jwt) {
+    axios.get('/user', {
+
+    }).then((response) => {
+      console.log(response.data);
+      console.log(response.status);
+      console.log(response.statusText);
+      console.log(response.headers);
+      console.log(response.config);
+    })
+  }
+  
 
   return (
     <div>
