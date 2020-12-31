@@ -3,11 +3,12 @@ import React from 'react';
 import './App.css';
 import NavBar from '../NavBar'
 import { Route, Switch } from 'react-router-dom';
-import HomePage from '../HomePage';
-import ProfilePage from '../ProfilePage';
-import SignUpPage from '../SignUpPage';
-import LoginPage from '../LoginPage';
+import HomePage from '../Home';
+import ProfilePage from '../Profile';
+import SignUpPage from '../SignUp';
+import LoginPage from '../Login';
 import ItemPage from '../ItemPage';
+import NotFound from '../NotFound';
 
 function Copyright() {
   return (
@@ -33,6 +34,7 @@ function App() {
           <Route path='/login' component={LoginPage}/>
           <Route path='/signup' component={SignUpPage}/>
           <Route path='/item/:itemid' component={ItemPage}/>
+          <Route component={NotFound} />
         </Switch>
       </main>
       <Copyright/>
