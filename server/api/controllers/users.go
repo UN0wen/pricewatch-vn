@@ -172,5 +172,5 @@ func LoginUser(w http.ResponseWriter, r *http.Request) {
 		sessionID = sessions[0].ID
 	}
 	render.Status(r, http.StatusOK)
-	render.Render(w, r, payloads.NewSessionResponse(sessionID))
+	render.Render(w, r, payloads.NewSessionResponse(sessionID, &found))
 }

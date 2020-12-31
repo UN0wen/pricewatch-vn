@@ -9,23 +9,26 @@ import SignUpPage from '../SignUp';
 import LoginPage from '../Login';
 import ItemPage from '../ItemPage';
 import NotFound from '../NotFound';
+import { SessionContext, UserContext, UserCtx } from '../../utils/sessions';
+import axios from 'axios';
 
-function Copyright() {
-  return (
-    <Typography variant="body2" color="textSecondary" align="center">
-      {'Copyright © '}
-      <Link color="inherit" href="https://material-ui.com/">
-        Your Website
-      </Link>{' '}
-      {new Date().getFullYear()}
-      {'.'}
-    </Typography>
-  );
-}
 
 function App() {
+  axios.defaults.baseURL = 'http://172.20.204.69:8080/api';
+  const jwt = SessionContext.getJWT()
+  axios.get('/user', {
+
+  }).then((response) => {
+    console.log(response.data);
+    console.log(response.status);
+    console.log(response.statusText);
+    console.log(response.headers);
+    console.log(response.config);
+  })
+
   return (
     <div>
+      <UserContext.Provider value={new UserCtx("", jwt, false)}>
       <NavBar />
       <main style={{margin: '0 15px'}}>
         <Switch>
@@ -37,7 +40,7 @@ function App() {
           <Route component={NotFound} />
         </Switch>
       </main>
-      <Copyright/>
+      </UserContext.Provider>
     </div>
   );
 }

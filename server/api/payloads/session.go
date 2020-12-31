@@ -4,18 +4,20 @@ import (
 	"net/http"
 	"time"
 
+	"github.com/UN0wen/pricewatch-vn/server/api/models"
 	"github.com/UN0wen/pricewatch-vn/server/utils"
 	"github.com/google/uuid"
 )
 
 // SessionResponse is the response payload for the Session data model.
 type SessionResponse struct {
+	*models.User
 	JWT string
 }
 
 // NewSessionResponse generate a JWT token for a session ID, then send it
-func NewSessionResponse(id uuid.UUID) *SessionResponse {
-	resp := &SessionResponse{JWT: utils.GenerateJWT(id)}
+func NewSessionResponse(id uuid.UUID, user *models.User) *SessionResponse {
+	resp := &SessionResponse{User: user, JWT: utils.GenerateJWT(id)}
 
 	return resp
 }
