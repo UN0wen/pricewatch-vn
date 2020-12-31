@@ -5,7 +5,9 @@ import NavBar from '../NavBar'
 import { Route, Switch } from 'react-router-dom';
 import HomePage from '../HomePage';
 import ProfilePage from '../ProfilePage';
-import SignIn from '../SignIn';
+import SignUpPage from '../SignUpPage';
+import LoginPage from '../LoginPage';
+import ItemPage from '../ItemPage';
 
 function Copyright() {
   return (
@@ -28,7 +30,9 @@ function App() {
         <Switch>
           <Route exact path='/'   component={HomePage}/>
           <Route path='/profile' component={ProfilePage}/>
-          <Route path='/signup' component={SignIn}/>
+          <Route path='/login' component={LoginPage}/>
+          <Route path='/signup' component={SignUpPage}/>
+          <Route path='/item/:itemid' component={ItemPage}/>
         </Switch>
       </main>
       <Copyright/>
