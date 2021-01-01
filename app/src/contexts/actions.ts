@@ -3,8 +3,11 @@ import { CookieWrapper } from '../utils/storage'
 import { AxiosInstance } from '../utils/axios'
 
 export interface LoginPayload {
-  email: string
-  password: string
+  user: {
+    email: string
+    password: string
+  }
+  
 }
 
 export async function loginUser(
@@ -35,7 +38,7 @@ export async function loginUser(
       CookieWrapper.setCookie(data, expires)
 
       // setup axios to use auth from now
-      AxiosInstance.defaults.headers.common['Authorization'] = data.jwt
+      AxiosInstance.defaults.headers.common['Authorization'] = "Bearer " + data.jwt
       return data
     }
 

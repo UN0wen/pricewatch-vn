@@ -4,12 +4,12 @@ import { UserAuth } from "./context";
 const currentUser = CookieWrapper.getCookie();
 
 const user = currentUser
-  ? JSON.parse(currentUser).user
+  ? currentUser.user
   : "";
 const token = currentUser
-  ? JSON.parse(currentUser).auth_token
+  ? currentUser.auth_token
   : "";
- 
+  
 export const initialState : UserAuth  = {
   user: user || "",
   token: token || "",

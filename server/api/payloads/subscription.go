@@ -9,7 +9,7 @@ import (
 
 // SubscriptionRequest is the request payload for the Subscription data model
 type SubscriptionRequest struct {
-	*models.Subscription
+	Subscription *models.Subscription `json:"subscription"`
 }
 
 // Bind is the postprocessing for the ItemRequest after the request is unmarshalled

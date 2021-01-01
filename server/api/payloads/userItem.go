@@ -10,13 +10,13 @@ import (
 
 // UserItemResponse is the response payload for the ItemPrice data model.
 type UserItemResponse struct {
-	Item  uuid.UUID
-	Valid bool
+	ItemID uuid.UUID `json:"itemid"`
+	Valid  bool      `json:"valid"`
 }
 
 // NewUserItemResponse generate a Response for Item object
 func NewUserItemResponse(userItem *models.UserItem) *UserItemResponse {
-	resp := &UserItemResponse{Item: userItem.ItemID}
+	resp := &UserItemResponse{ItemID: userItem.ItemID}
 
 	return resp
 }
@@ -35,6 +35,6 @@ func NewUserItemListResponse(userItems []models.UserItem) []render.Renderer {
 func (rd *UserItemResponse) Render(w http.ResponseWriter, r *http.Request) error {
 
 	// Valid is true if the itemID is not nil
-	rd.Valid = rd.Item != uuid.Nil
+	rd.Valid = rd.ItemID != uuid.Nil
 	return nil
 }

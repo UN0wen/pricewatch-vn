@@ -4,20 +4,34 @@ import NavBar from '../NavBar'
 import { Route, Switch } from 'react-router-dom'
 import ItemPage from '../ItemPage'
 import NotFound from '../NotFound'
-import axios from 'axios'
-import { AuthProvider } from '../../contexts/context'
 import Routes from '../../utils/routes'
 import SignIn from '../SignIn'
 import SignUp from '../SignUp'
 import Profile from '../Profile'
 import Home from '../Home'
 import SignOut from '../SignOut'
+import { AxiosInstance } from '../../utils/axios'
+import { useAuthDispatch } from '../../contexts/context'
+import { logout } from '../../contexts/actions'
+import { CookieWrapper } from '../../utils/storage'
 
 function App() {
-  axios.defaults.baseURL = 'http://172.20.204.69:8080/api'
+  // Get current cookie
+  const currentUser = CookieWrapper.getCookie()
+  AxiosInstance.defaults.headers.common['Authorization'] = currentUser
+    ? "Bearer " + currentUser.jwt
+    : ''
+
+  // Initial check for current session
+  const dispatch = useAuthDispatch()
+  AxiosInstance.get('/user')
+    .catch((error) => {
+      console.log(error)
+      logout(dispatch)
+    })
 
   return (
-    <AuthProvider>
+    <div>
       <NavBar />
       <main style={{ margin: '0 15px' }}>
         <Switch>
@@ -30,7 +44,7 @@ function App() {
           <Route component={NotFound} />
         </Switch>
       </main>
-    </AuthProvider>
+    </div>
   )
 }
 

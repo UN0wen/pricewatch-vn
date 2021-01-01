@@ -9,7 +9,7 @@ import (
 
 // UserRequest is the request payload for the User data model
 type UserRequest struct {
-	*models.User
+	User *models.User `json:"user"`
 
 	ProtectedID string `json:"id"` // override 'id' json to have more control
 }
@@ -26,8 +26,8 @@ func (a *UserRequest) Bind(r *http.Request) error {
 
 // UserResponse is the response payload for the User data model.
 type UserResponse struct {
-	*models.User
-	Elapsed int64 `json:"elapsed"`
+	User    *models.User `json:"user"`
+	Elapsed int64        `json:"elapsed"`
 }
 
 // NewUserResponse generate a Response for User object

@@ -1,12 +1,8 @@
-import React, { useState } from 'react'
-import { makeStyles, Theme, createStyles } from '@material-ui/core/styles'
-import Backdrop from '@material-ui/core/Backdrop'
-import Fade from '@material-ui/core/Fade'
-import { useHistory } from 'react-router-dom'
-import Routes from '../../utils/routes'
-import { Dialog } from '@material-ui/core'
-import { logout } from '../../contexts/actions'
-import { useAuthDispatch } from '../../contexts/context'
+import { Backdrop, createStyles, Dialog, Fade, makeStyles, Theme } from "@material-ui/core"
+import React, { useEffect } from "react"
+import { useState } from "react"
+import { useHistory } from "react-router-dom"
+import Routes from "../../../utils/routes"
 
 const useStyles = makeStyles((theme: Theme) =>
   createStyles({
@@ -23,14 +19,17 @@ const useStyles = makeStyles((theme: Theme) =>
   })
 )
 
-export default function SignOut() {
+export default function SignInModal(props) {
   const classes = useStyles()
-  const dispatch = useAuthDispatch()
   const history = useHistory()
-  const [open, setOpen] = useState(true)
+  const [open, setOpen] = useState(false)
+
+  // change state on props change
+  useEffect(() => {
+    setOpen(props.open)
+  }, [props.open]);
 
   const handleEnter = () => {
-    logout(dispatch)
     setTimeout(() => {
       setOpen(false)
     }, 1000)
@@ -55,7 +54,7 @@ export default function SignOut() {
       >
         <Fade in={open} onEnter={handleEnter} onExited={handleExit}>
           <div className={classes.paper}>
-            <h2 id="transition-modal-title">Successfully logged out</h2>
+            <h2 id="transition-modal-title">Successfully logged in</h2>
             <p id="transition-modal-description">
               You will be redirected to the home page shortly...
             </p>

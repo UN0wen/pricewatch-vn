@@ -9,7 +9,7 @@ import (
 
 // ItemPriceResponse is the response payload for the ItemPrice data model.
 type ItemPriceResponse struct {
-	*models.ItemPrice
+	ItemPrice *models.ItemPrice `json:"price"`
 }
 
 // NewItemPriceResponse generate a Response for Item object

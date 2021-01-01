@@ -10,8 +10,7 @@ import (
 
 // ItemRequest is the request payload for the Item data model
 type ItemRequest struct {
-	*models.Item
-	limit int64
+	Item *models.Item `json:"item"`
 }
 
 // Bind is the postprocessing for the ItemRequest after the request is unmarshalled
@@ -24,7 +23,7 @@ func (a *ItemRequest) Bind(r *http.Request) error {
 
 // ItemResponse is the response payload for the Item data model.
 type ItemResponse struct {
-	*models.Item
+	Item *models.Item `json:"item"`
 }
 
 // NewItemResponse generate a Response for Item object

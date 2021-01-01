@@ -2,12 +2,12 @@ import Cookies from "universal-cookie";
 const cookies = new Cookies();
 
 export const CookieWrapper = (function () {
-  const getCookie = function (): string {
+  const getCookie = function () {
     return cookies.get("userAuth");
   };
 
   const setCookie = function (userAuth: any, expire: Date) {
-    cookies.set("userAuth", JSON.stringify(userAuth), {
+    cookies.set("userAuth", userAuth, {
       path: "/",
       expires: expire,
     });

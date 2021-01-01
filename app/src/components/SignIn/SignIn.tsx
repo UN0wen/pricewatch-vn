@@ -1,4 +1,4 @@
-import React from 'react'
+import React, { useState } from 'react'
 import LockOutlinedIcon from '@material-ui/icons/LockOutlined'
 import { makeStyles } from '@material-ui/core/styles'
 import { useForm } from 'react-hook-form'
@@ -16,7 +16,7 @@ import {
 import Routes from '../../utils/routes'
 import { loginUser } from '../../contexts/actions'
 import { useAuthDispatch } from '../../contexts/context'
-import { useHistory } from 'react-router-dom'
+import SignInModal from './components/SignInModal'
 
 const useStyles = makeStyles((theme) => ({
   paper: {
@@ -45,15 +45,19 @@ type FormData = {
 
 export default function SignIn() {
   const classes = useStyles()
-  const history = useHistory()
   const { register, handleSubmit } = useForm<FormData>()
   const dispatch = useAuthDispatch()
+  const [open, setOpen] = useState(false)
 
   const onSubmit = handleSubmit(async ({ email, password }) => {
     try {
-      const response = await loginUser(dispatch, { email, password })
+      const user = {
+        email,
+        password
+      }
+      const response = await loginUser(dispatch, {user})
       if (!response.user) return // TODO: error handling
-      history.push(Routes.HOME)
+      setOpen(true)
     } catch (error) {
       console.log(error)
     }
@@ -62,6 +66,7 @@ export default function SignIn() {
   return (
     <Container component="main" maxWidth="xs">
       <CssBaseline />
+      <SignInModal open={open} />
       <div className={classes.paper}>
         <Avatar className={classes.avatar}>
           <LockOutlinedIcon />
