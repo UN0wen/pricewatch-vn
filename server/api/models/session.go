@@ -5,6 +5,7 @@ import (
 	"time"
 
 	"github.com/UN0wen/pricewatch-vn/server/db"
+	"github.com/UN0wen/pricewatch-vn/server/utils"
 	"github.com/google/uuid"
 	"github.com/mitchellh/mapstructure"
 	"github.com/pkg/errors"
@@ -27,6 +28,7 @@ type Session struct {
 	ID           uuid.UUID `valid:"required" json:"id"`
 	UserID       uuid.UUID `valid:"required" json:"userid"`
 	ExpiresAfter time.Time `valid:"required" json:"expiresafter"`
+	JWT          string    `valid:"required" json:"jwt"`
 }
 
 // SessionQuery represents all of the rows the item can be queried over
@@ -50,6 +52,7 @@ func NewSessionTable(db *db.Db) (sessionTable SessionTable, err error) {
 			id uuid NOT NULL,
 			userid uuid REFERENCES users(id) ON DELETE CASCADE,
 			expiresafter timestamptz NOT NULL,
+			jwt TEXT NOT NULL,
 			PRIMARY KEY (id, userid)
 		)`, SessionTableName)
 	// Create the actual table
@@ -101,11 +104,14 @@ func (table *SessionTable) GetByID(id uuid.UUID) (session Session, err error) {
 	return
 }
 
-// Insert adds a new session into the table and return the session uuid.
-func (table *SessionTable) Insert(session Session) (sessionID uuid.UUID, err error) {
+// Insert adds a new session into the table and return the JWT.
+func (table *SessionTable) Insert(session Session) (jwt string, err error) {
 	session.ExpiresAfter = time.Now().Add(time.Hour * 24)
-	sessionID, _ = uuid.NewUUID()
+	sessionID, _ := uuid.NewUUID()
 	session.ID = sessionID
+
+	jwt = utils.GenerateJWT(sessionID)
+	session.JWT = jwt
 	err = table.connection.Insert(SessionTableName, session)
 	if err != nil {
 		err = errors.Wrapf(err, "Insertion query failed for new session: %s", session)

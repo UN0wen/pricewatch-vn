@@ -160,17 +160,17 @@ func LoginUser(w http.ResponseWriter, r *http.Request) {
 
 	// Creates new session for User or return the current session
 
-	var sessionID uuid.UUID
+	var jwt string
 	// Try to get current session
 	// TODO: cache
 	sessions, err := models.LayerInstance().Session.Get(models.SessionQuery{UserID: found.ID})
 
 	// Session not found, create new session
 	if err != nil || len(sessions) == 0 {
-		sessionID, err = models.LayerInstance().Session.Insert(models.Session{UserID: found.ID})
+		jwt, err = models.LayerInstance().Session.Insert(models.Session{UserID: found.ID})
 	} else {
-		sessionID = sessions[0].ID
+		jwt = sessions[0].JWT
 	}
 	render.Status(r, http.StatusOK)
-	render.Render(w, r, payloads.NewSessionResponse(sessionID, &found))
+	render.Render(w, r, payloads.NewSessionResponse(jwt, &found))
 }

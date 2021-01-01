@@ -19,8 +19,6 @@ func createUserRoutes(r *chi.Mux) {
 		r.With(middleware.Authenticate).With(controllers.SessionCtx).Get("/", controllers.GetUser)       // Get /users
 		r.With(middleware.Authenticate).With(controllers.SessionCtx).Put("/", controllers.UpdateUser)    // Update
 		r.With(middleware.Authenticate).With(controllers.SessionCtx).Delete("/", controllers.DeleteUser) // Delete
-		r.Post("/signup", controllers.CreateUser)
-		r.Post("/login", controllers.LoginUser)
 
 		// UserItems
 		r.With(middleware.Authenticate).With(controllers.SessionCtx).Get("/item/{itemID}", controllers.GetUserItem) //
@@ -37,6 +35,11 @@ func createItemRoutes(r *chi.Mux) {
 		r.Get("/{itemID}/price", controllers.GetPrice)
 		r.Get("/{itemID}/prices", controllers.GetPrices)
 	})
+}
+
+func createAuthRoutes(r *chi.Mux) {
+	r.Post("/api/signup", controllers.CreateUser)
+	r.Post("/api/login", controllers.LoginUser)
 }
 
 // NewRouter creates a chi Router with all routes and middleware configured
@@ -59,8 +62,11 @@ func NewRouter() *chi.Mux {
 		MaxAge:           300, // Maximum value not ignored by any of major browsers
 	}))
 
+	// Create API routes
 	createUserRoutes(router)
 	createItemRoutes(router)
+	createAuthRoutes(router)
+
 	spa := spaHandler{staticPath: "build", indexPath: "index.html"}
 	router.Handle("/*", spa)
 	return router

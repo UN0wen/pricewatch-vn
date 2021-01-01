@@ -1,34 +1,22 @@
-  
-import React from 'react';
-import LockOutlinedIcon from '@material-ui/icons/LockOutlined';
-import { makeStyles } from '@material-ui/core/styles';
+import React from 'react'
+import LockOutlinedIcon from '@material-ui/icons/LockOutlined'
+import { makeStyles } from '@material-ui/core/styles'
+import { useForm } from 'react-hook-form'
 
 import {
   Avatar,
   Button,
   CssBaseline,
   TextField,
-  FormControlLabel,
-  Checkbox,
   Link,
   Grid,
-  Box,
   Typography,
   Container,
-} from '@material-ui/core';
-
-function Copyright() {
-  return (
-    <Typography variant="body2" color="textSecondary" align="center">
-      {'Copyright © '}
-      <Link color="inherit" href="https://material-ui.com/">
-        Your Website
-      </Link>{' '}
-      {new Date().getFullYear()}
-      {'.'}
-    </Typography>
-  );
-}
+} from '@material-ui/core'
+import Routes from '../../utils/routes'
+import { loginUser } from '../../contexts/actions'
+import { useAuthDispatch } from '../../contexts/context'
+import { useHistory } from 'react-router-dom'
 
 const useStyles = makeStyles((theme) => ({
   paper: {
@@ -48,10 +36,28 @@ const useStyles = makeStyles((theme) => ({
   submit: {
     margin: theme.spacing(3, 0, 2),
   },
-}));
+}))
 
-export default function Login() {
-  const classes = useStyles();
+type FormData = {
+  email: string
+  password: string
+}
+
+export default function SignIn() {
+  const classes = useStyles()
+  const history = useHistory()
+  const { register, handleSubmit } = useForm<FormData>()
+  const dispatch = useAuthDispatch()
+
+  const onSubmit = handleSubmit(async ({ email, password }) => {
+    try {
+      const response = await loginUser(dispatch, { email, password })
+      if (!response.user) return // TODO: error handling
+      history.push(Routes.HOME)
+    } catch (error) {
+      console.log(error)
+    }
+  })
 
   return (
     <Container component="main" maxWidth="xs">
@@ -63,7 +69,7 @@ export default function Login() {
         <Typography component="h1" variant="h5">
           Sign in
         </Typography>
-        <form className={classes.form} noValidate>
+        <form className={classes.form} noValidate onSubmit={onSubmit}>
           <TextField
             variant="outlined"
             margin="normal"
@@ -73,6 +79,7 @@ export default function Login() {
             label="Email Address"
             name="email"
             autoComplete="email"
+            inputRef={register}
             autoFocus
           />
           <TextField
@@ -85,10 +92,7 @@ export default function Login() {
             type="password"
             id="password"
             autoComplete="current-password"
-          />
-          <FormControlLabel
-            control={<Checkbox value="remember" color="primary" />}
-            label="Remember me"
+            inputRef={register}
           />
           <Button
             type="submit"
@@ -100,22 +104,14 @@ export default function Login() {
             Sign In
           </Button>
           <Grid container>
-            <Grid item xs>
-              <Link href="#" variant="body2">
-                Forgot password?
-              </Link>
-            </Grid>
             <Grid item>
-              <Link href="#" variant="body2">
+              <Link href={Routes.SIGNUP} variant="body2">
                 {"Don't have an account? Sign Up"}
               </Link>
             </Grid>
           </Grid>
         </form>
       </div>
-      <Box mt={8}>
-        <Copyright />
-      </Box>
     </Container>
-  );
+  )
 }
