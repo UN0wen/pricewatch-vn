@@ -1,22 +1,33 @@
-import { red } from '@material-ui/core/colors';
-import { createMuiTheme } from '@material-ui/core/styles';
+import { blue, deepPurple, lightBlue, purple, red } from '@material-ui/core/colors'
+import { createMuiTheme } from '@material-ui/core/styles'
 
 // A custom theme for this app
-const theme = createMuiTheme({
+export const lightTheme = createMuiTheme({
   palette: {
+    type: 'light',
     primary: {
-      main: '#556cd6',
+      main: lightBlue[500],
     },
     secondary: {
-      main: '#19857b',
+      main: deepPurple[500],
     },
     error: {
       main: red.A400,
     },
-    background: {
-      default: '#fff',
+  },
+})
+
+export const darkTheme = createMuiTheme({
+  palette: {
+    type: 'dark',
+    primary: {
+      main: blue[200],
+    },
+    secondary: {
+      main: purple[200],
+    },
+    error: {
+      main: red[500],
     },
   },
-});
-
-export default theme;
+})

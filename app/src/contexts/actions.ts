@@ -2,12 +2,70 @@ import { AuthDispatch, AuthReducerActions } from './reducer'
 import { CookieWrapper } from '../utils/storage'
 import { AxiosInstance } from '../utils/axios'
 
-export interface LoginPayload {
+type LoginPayload = {
   user: {
     email: string
     password: string
   }
-  
+}
+
+type CreateUserPayload = {
+  user: {
+    username: string
+    email: string
+    password: string
+  }
+}
+
+export async function createUser(
+  dispatch: React.Dispatch<AuthDispatch>,
+  createUserPayload: CreateUserPayload
+) {
+  const requestOptions = {
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(createUserPayload),
+  }
+  try {
+    dispatch({
+      type: AuthReducerActions.REQUEST_LOGIN,
+      payload: {} as any,
+      error: {} as any,
+    })
+    const response = await AxiosInstance.post(
+      `/signup`,
+      createUserPayload,
+      requestOptions
+    )
+    const data = response.data
+    if (data.user) {
+      dispatch({
+        type: AuthReducerActions.LOGIN_SUCCESS,
+        payload: data,
+        error: {} as any,
+      })
+      let expires = new Date()
+      expires = new Date(expires.getTime() + 1000 * 60 * 60 * 24 * 7)
+      CookieWrapper.setCookie(data, expires)
+
+      // setup axios to use auth from now
+      AxiosInstance.defaults.headers.common['Authorization'] =
+        'Bearer ' + data.jwt
+      return data
+    }
+
+    dispatch({
+      type: AuthReducerActions.LOGIN_ERROR,
+      payload: {} as any,
+      error: data.errors[0],
+    })
+    return
+  } catch (error) {
+    dispatch({
+      type: AuthReducerActions.LOGIN_ERROR,
+      payload: {} as any,
+      error: error,
+    })
+  }
 }
 
 export async function loginUser(
@@ -25,7 +83,11 @@ export async function loginUser(
       payload: {} as any,
       error: {} as any,
     })
-    const response = await AxiosInstance.post(`/login`, loginPayload, requestOptions)
+    const response = await AxiosInstance.post(
+      `/login`,
+      loginPayload,
+      requestOptions
+    )
     const data = response.data
     if (data.user) {
       dispatch({
@@ -38,7 +100,8 @@ export async function loginUser(
       CookieWrapper.setCookie(data, expires)
 
       // setup axios to use auth from now
-      AxiosInstance.defaults.headers.common['Authorization'] = "Bearer " + data.jwt
+      AxiosInstance.defaults.headers.common['Authorization'] =
+        'Bearer ' + data.jwt
       return data
     }
 

@@ -53,9 +53,9 @@ export default function SignIn() {
     try {
       const user = {
         email,
-        password
+        password,
       }
-      const response = await loginUser(dispatch, {user})
+      const response = await loginUser(dispatch, { user })
       if (!response.user) return // TODO: error handling
       setOpen(true)
     } catch (error) {
@@ -66,6 +66,7 @@ export default function SignIn() {
   return (
     <Container component="main" maxWidth="xs">
       <CssBaseline />
+
       <SignInModal open={open} />
       <div className={classes.paper}>
         <Avatar className={classes.avatar}>
