@@ -1,13 +1,13 @@
 import { CookieWrapper } from "../utils/storage";
 import { UserAuth } from "./context";
 
-const currentUser = CookieWrapper.getCookie();
-
+const currentUser = CookieWrapper.getCookie("userAuth");
+const currentJWT = CookieWrapper.getCookie("jwt");
 const user = currentUser
-  ? currentUser.user
+  ? currentUser
   : "";
-const token = currentUser
-  ? currentUser.auth_token
+const token = currentJWT
+  ? currentJWT
   : "";
   
 export const initialState : UserAuth  = {

@@ -15,20 +15,20 @@ import { logout } from '../../contexts/actions'
 import { CookieWrapper } from '../../utils/storage'
 import { CssBaseline, ThemeProvider, useMediaQuery } from '@material-ui/core'
 import { darkTheme, lightTheme } from '../../theme'
-import Account from '../Account'
 
 function App() {
   const prefersDarkMode = useMediaQuery('(prefers-color-scheme: dark)')
 
   // Get current cookie
-  const currentUser = CookieWrapper.getCookie()
-  AxiosInstance.defaults.headers.common['Authorization'] = currentUser
-    ? 'Bearer ' + currentUser.jwt
+  const currentJWT = CookieWrapper.getCookie("jwt")
+  AxiosInstance.defaults.headers.common['Authorization'] = currentJWT
+    ? 'Bearer ' + currentJWT
     : ''
 
   // Initial check for current session
   const dispatch = useAuthDispatch()
   AxiosInstance.get('/user').catch(() => {
+    console.log("error during user initialization, deleting cookies...")
     logout(dispatch)
   })
 
@@ -41,7 +41,6 @@ function App() {
       <Switch>
         <Route exact path={Routes.HOME} component={Home} />
         <Route path={Routes.PROFILE} component={Profile} />
-        <Route path={Routes.ACCOUNT} component={Account} />
         <Route path={Routes.SIGNIN} component={SignIn} />
         <Route path={Routes.SIGNUP} component={SignUp} />
         <Route path={Routes.ITEM} component={ItemPage} />

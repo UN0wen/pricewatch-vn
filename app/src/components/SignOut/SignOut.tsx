@@ -4,7 +4,7 @@ import Backdrop from '@material-ui/core/Backdrop'
 import Fade from '@material-ui/core/Fade'
 import { useHistory } from 'react-router-dom'
 import Routes from '../../utils/routes'
-import { Dialog } from '@material-ui/core'
+import { Dialog, LinearProgress } from '@material-ui/core'
 import { logout } from '../../contexts/actions'
 import { useAuthDispatch } from '../../contexts/context'
 
@@ -59,6 +59,7 @@ export default function SignOut() {
             <p id="transition-modal-description">
               You will be redirected to the home page shortly...
             </p>
+            <LinearProgress/>
           </div>
         </Fade>
       </Dialog>

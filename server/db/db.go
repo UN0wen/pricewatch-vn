@@ -323,7 +323,8 @@ func (db *Db) Update(id uuid.UUID, table string, updates interface{}) (data []ma
 		k := strings.ToLower(fields.Type().Field(i).Name)
 		v := fields.Field(i).Interface()
 		// Skip auto params or unset fields on the incoming User
-		if AutoParam[k] || SkipParam[k] || isUndeclared(fields.Field(i).Interface()) {
+		// Also skip the ID field since we dont ever want to update it
+		if AutoParam[k] || SkipParam[k] || isUndeclared(fields.Field(i).Interface()) || k == "id" {
 			continue
 		} else if TimeParam[k] { // convert time types to String
 			if t, ok := v.(time.Time); ok {

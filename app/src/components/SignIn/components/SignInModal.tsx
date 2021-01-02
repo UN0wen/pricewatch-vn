@@ -1,4 +1,4 @@
-import { Backdrop, createStyles, Dialog, Fade, makeStyles, Theme } from "@material-ui/core"
+import { Backdrop, createStyles, Dialog, Fade, LinearProgress, makeStyles, Theme } from "@material-ui/core"
 import React, { useEffect } from "react"
 import { useState } from "react"
 import { useHistory } from "react-router-dom"
@@ -58,6 +58,7 @@ export default function SignInModal(props) {
             <p id="transition-modal-description">
               You will be redirected to the home page shortly...
             </p>
+            <LinearProgress />
           </div>
         </Fade>
       </Dialog>

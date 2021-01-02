@@ -45,8 +45,8 @@ export async function createUser(
       })
       let expires = new Date()
       expires = new Date(expires.getTime() + 1000 * 60 * 60 * 24 * 7)
-      CookieWrapper.setCookie(data, expires)
-
+      CookieWrapper.setCookie("userAuth", data.user, expires)
+      CookieWrapper.setCookie("jwt", data.jwt, expires)
       // setup axios to use auth from now
       AxiosInstance.defaults.headers.common['Authorization'] =
         'Bearer ' + data.jwt
@@ -97,7 +97,8 @@ export async function loginUser(
       })
       let expires = new Date()
       expires = new Date(expires.getTime() + 1000 * 60 * 60 * 24 * 7)
-      CookieWrapper.setCookie(data, expires)
+      CookieWrapper.setCookie("userAuth", data.user, expires)
+      CookieWrapper.setCookie("jwt", data.jwt, expires)
 
       // setup axios to use auth from now
       AxiosInstance.defaults.headers.common['Authorization'] =
@@ -130,4 +131,96 @@ export async function logout(dispatch: React.Dispatch<AuthDispatch>) {
   // setup axios to stop using auth
   AxiosInstance.defaults.headers.common['Authorization'] = ''
   CookieWrapper.removeCookie()
+}
+
+type UpdateUsernamePayload = {
+  user: {
+    username: string
+  }
+}
+
+type UpdatePasswordPayload = {
+  user: {
+    password: string
+  }
+}
+
+export async function updatePassword(
+  dispatch: React.Dispatch<AuthDispatch>,
+  loginPayload: LoginPayload,
+  updatePayload: UpdatePasswordPayload
+) {
+  const requestOptions = (payload) => {
+    return {
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(payload),
+    }
+  }
+
+  try {
+    const loginResponse = await AxiosInstance.post(
+      `/login`,
+      loginPayload,
+      requestOptions(loginPayload)
+    )
+    const loginData = loginResponse.data
+    if (loginData.user) {
+      const response = await AxiosInstance.put(
+        `/user`,
+        updatePayload,
+        requestOptions(updatePayload)
+      )
+      const data = response.data
+      if (data.user) {
+        dispatch({
+          type: AuthReducerActions.LOGIN_SUCCESS,
+          payload: data,
+          error: {} as any,
+        })
+        let expires = new Date()
+        expires = new Date(expires.getTime() + 1000 * 60 * 60 * 24 * 7)
+        CookieWrapper.setCookie("userAuth", data.user, expires)
+        return data
+      }
+    }
+
+    return
+  } catch (error) {
+    console.log(error)
+  }
+}
+
+export async function updateUsername(
+  dispatch: React.Dispatch<AuthDispatch>,
+  updatePayload: UpdateUsernamePayload
+) {
+  const requestOptions = {
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(updatePayload),
+  }
+
+  try {
+    const response = await AxiosInstance.put(
+      `/user`,
+      updatePayload,
+      requestOptions
+    )
+    const data = response.data
+    if (data.user) {
+      dispatch({
+        type: AuthReducerActions.LOGIN_SUCCESS,
+        payload: data,
+        error: {} as any,
+      })
+      let expires = new Date()
+      expires = new Date(expires.getTime() + 1000 * 60 * 60 * 24 * 7)
+      CookieWrapper.setCookie("userAuth", data.user, expires)
+
+      return data
+    }
+
+    return
+  } catch (error) {
+    console.log(error)
+  }
 }

@@ -3,7 +3,7 @@ import { fade, makeStyles, Theme, createStyles } from '@material-ui/core/styles'
 import HomeIcon from '@material-ui/icons/Home'
 import SearchIcon from '@material-ui/icons/Search'
 import AccountCircle from '@material-ui/icons/AccountCircle'
-
+import KeyboardArrowUp from '@material-ui/icons/KeyboardArrowUp'
 import {
   AppBar,
   Toolbar,
@@ -14,10 +14,12 @@ import {
   Menu,
   Divider,
   Button,
+  Fab,
 } from '@material-ui/core'
 import { useHistory } from 'react-router-dom'
 import Routes from '../../utils/routes'
 import { useAuthState } from '../../contexts/context'
+import ScrollTop from './components/ScrollTop'
 
 const useStyles = makeStyles((theme: Theme) =>
   createStyles({
@@ -160,8 +162,8 @@ export default function NavBar() {
 
   return (
     <div className={classes.grow}>
-      <AppBar position="static" color="default">
-        <Toolbar>
+      <AppBar position="sticky" color="default">
+        <Toolbar id="back-to-top-anchor">
           <IconButton
             edge="start"
             className={classes.homeButton}
@@ -228,6 +230,11 @@ export default function NavBar() {
         </Toolbar>
       </AppBar>
       {renderMenu}
+      <ScrollTop>
+        <Fab color="secondary" size="small" aria-label="scroll back to top">
+          <KeyboardArrowUp />
+        </Fab>
+      </ScrollTop>
     </div>
   )
 }
