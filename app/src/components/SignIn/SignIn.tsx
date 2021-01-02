@@ -45,7 +45,7 @@ type FormData = {
 
 export default function SignIn() {
   const classes = useStyles()
-  const { register, handleSubmit } = useForm<FormData>()
+  const { register, handleSubmit, setError , errors} = useForm<FormData>()
   const dispatch = useAuthDispatch()
   const [open, setOpen] = useState(false)
 
@@ -59,7 +59,13 @@ export default function SignIn() {
       if (!response.user) return // TODO: error handling
       setOpen(true)
     } catch (error) {
-      console.log(error)
+      setError('email', {
+        type: 'required',
+      })
+      setError('password', {
+        type: 'required',
+        message: 'Account does not exist or password does not match.',
+      })
     }
   })
 
@@ -86,6 +92,8 @@ export default function SignIn() {
             name="email"
             autoComplete="email"
             inputRef={register}
+            error={errors.email ? true : false}
+            helperText={errors.email ? errors.email.message : ''}
             autoFocus
           />
           <TextField
@@ -98,6 +106,8 @@ export default function SignIn() {
             type="password"
             id="password"
             autoComplete="current-password"
+            error={errors.password ? true : false}
+            helperText={errors.password ? errors.password.message : ''}
             inputRef={register}
           />
           <Button

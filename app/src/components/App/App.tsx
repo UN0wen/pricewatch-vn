@@ -28,14 +28,12 @@ function App() {
 
   // Initial check for current session
   const dispatch = useAuthDispatch()
-  AxiosInstance.get('/user').catch((error) => {
-    console.log(error)
+  AxiosInstance.get('/user').catch(() => {
     logout(dispatch)
   })
 
   const theme = prefersDarkMode ? darkTheme : lightTheme
 
-  console.log(theme)
   return (
     <ThemeProvider theme={theme}>
       <CssBaseline />

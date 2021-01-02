@@ -116,7 +116,7 @@ func DeleteUser(w http.ResponseWriter, r *http.Request) {
 	render.Status(r, http.StatusOK)
 }
 
-// CreateUser creates a new User and returns it
+// CreateUser creates a new User and returns a logged in session
 // back to the client as an acknowledgement. It generates a new
 // uuid when called.
 func CreateUser(w http.ResponseWriter, r *http.Request) {
@@ -135,8 +135,20 @@ func CreateUser(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	user.ID = userID
+
+	var jwt string
+	// Try to get current session
+	// TODO: cache
+	sessions, err := models.LayerInstance().Session.Get(models.SessionQuery{UserID: userID})
+
+	// Session not found, create new session
+	if err != nil || len(sessions) == 0 {
+		jwt, err = models.LayerInstance().Session.Insert(models.Session{UserID: userID})
+	} else {
+		jwt = sessions[0].JWT
+	}
 	render.Status(r, http.StatusCreated)
-	render.Render(w, r, payloads.NewUserResponse(user))
+	render.Render(w, r, payloads.NewSessionResponse(jwt, user))
 }
 
 // LoginUser logs in a new user based on the provided credentials

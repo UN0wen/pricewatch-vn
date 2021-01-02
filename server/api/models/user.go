@@ -97,6 +97,7 @@ func (table *UserTable) Login(user User) (found User, err error) {
 	err = bcrypt.CompareHashAndPassword([]byte(found.Password), []byte(user.Password))
 	if err != nil {
 		err = errors.Wrapf(err, "Provided password does not match")
+		return
 	}
 
 	// Update time logged in
