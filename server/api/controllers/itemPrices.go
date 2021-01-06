@@ -12,7 +12,7 @@ import (
 
 // GetPrice returns the most current price for item with id.
 func GetPrice(w http.ResponseWriter, r *http.Request) {
-	var itemPrice []models.ItemPrice
+	var itemPrice models.ItemPrice
 	var err error
 	itemIDParam := chi.URLParam(r, "itemID")
 	itemID, err := uuid.Parse(itemIDParam)
@@ -22,14 +22,14 @@ func GetPrice(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	itemPrice, err = models.LayerInstance().ItemPrice.Get(models.ItemPriceQuery{ID: itemID}, "DESC", 1)
+	itemPrice, err = models.LayerInstance().ItemPrice.GetPrice(itemID)
 
 	if err != nil {
-		render.Render(w, r, payloads.ErrNotFound)
+		render.Render(w, r, payloads.ErrInternalError(err))
 		return
 	}
 
-	if err := render.Render(w, r, payloads.NewItemPriceResponse(&itemPrice[0])); err != nil {
+	if err := render.Render(w, r, payloads.NewItemPriceResponse(&itemPrice)); err != nil {
 		render.Render(w, r, payloads.ErrRender(err))
 		return
 	}
@@ -43,11 +43,11 @@ func GetPrices(w http.ResponseWriter, r *http.Request) {
 	itemID, err := uuid.Parse(itemIDParam)
 
 	if err != nil {
-		itemPrices, err = models.LayerInstance().ItemPrice.Get(models.ItemPriceQuery{ID: itemID}, "ASC", 20)
-	} else {
 		render.Render(w, r, payloads.ErrNotFound)
 		return
 	}
+
+	itemPrices, err = models.LayerInstance().ItemPrice.GetAllPrices(itemID)
 
 	if err != nil {
 		render.Render(w, r, payloads.ErrInternalError(err))

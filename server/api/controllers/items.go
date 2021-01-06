@@ -39,7 +39,7 @@ func GetItem(w http.ResponseWriter, r *http.Request) {
 
 // GetItems returns all items.
 func GetItems(w http.ResponseWriter, r *http.Request) {
-	items, err := models.LayerInstance().Item.Get(models.ItemQuery{})
+	items, err := models.LayerInstance().Item.GetAll()
 
 	if err != nil {
 		render.Render(w, r, payloads.ErrInternalError(err))
@@ -81,7 +81,7 @@ func CreateItem(w http.ResponseWriter, r *http.Request) {
 	}
 
 	// insert new item
-	itemID, err := models.LayerInstance().Item.Insert(*item)
+	returnedItem, err := models.LayerInstance().Item.Insert(*item)
 	if err != nil {
 		render.Render(w, r, payloads.ErrInternalError(err))
 		return
@@ -89,13 +89,13 @@ func CreateItem(w http.ResponseWriter, r *http.Request) {
 
 	// add item to userItems
 	userID := r.Context().Value("userID").(uuid.UUID)
-	err = models.LayerInstance().UserItem.Insert(models.UserItem{UserID: userID, ItemID: itemID})
+	_, err = models.LayerInstance().UserItem.Insert(models.UserItem{UserID: userID, ItemID: returnedItem.ID})
 	if err != nil {
 		render.Render(w, r, payloads.ErrInternalError(err))
 		return
 	}
 
-	item.ID = itemID
+	item.ID = returnedItem.ID
 	if err := render.Render(w, r, payloads.NewItemResponse(item)); err != nil {
 		render.Render(w, r, payloads.ErrRender(err))
 		return

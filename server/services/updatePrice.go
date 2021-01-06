@@ -34,7 +34,7 @@ func UpdateOne(item models.Item) (updated int, err error) {
 	path, err := url.Parse(item.URL)
 	s := scraper.Instance().Scrapers[path.Host]
 
-	oldItemPrices, err := models.LayerInstance().ItemPrice.Get(models.ItemPriceQuery{ID: item.ID}, "DESC", 1)
+	oldItemPrices, err := models.LayerInstance().ItemPrice.GetAllPrices(item.ID)
 
 	if err != nil {
 		err = errors.Wrapf(err, "Could not find the current price for item with url %s", item.URL)
@@ -62,8 +62,8 @@ func UpdateOne(item models.Item) (updated int, err error) {
 	}
 
 	if updated > 0 {
-		itemPrice.ID = item.ID
-		err = models.LayerInstance().ItemPrice.Insert(itemPrice)
+		itemPrice.ItemID = item.ID
+		_, err = models.LayerInstance().ItemPrice.Insert(itemPrice)
 
 		if err != nil {
 			err = errors.Wrapf(err, "Could not insert new item price for item with url %s", item.URL)
@@ -74,7 +74,7 @@ func UpdateOne(item models.Item) (updated int, err error) {
 
 // UpdateAll tries to go over every item in the database and update them
 func UpdateAll() (err error) {
-	items, err := models.LayerInstance().Item.Get(models.ItemQuery{})
+	items, err := models.LayerInstance().Item.GetAll()
 
 	if err != nil {
 		err = errors.Wrap(err, "Could not get all items for UpdateAll")
@@ -99,9 +99,10 @@ func UpdateAll() (err error) {
 	wg.Wait()
 	close(ch)
 
-	utils.Sugar.Infof("%s", results)
+	utils.Sugar.Infof("UpdateAll finished with results:")
 
 	for _, res := range results {
+		utils.Sugar.Infof("%s: %d, %s", res.itemID, res.priceChange, res.err)
 		// Send email
 		if err == nil && res.priceChange == PriceFall {
 

@@ -46,7 +46,7 @@ func SessionCtx(next http.Handler) http.Handler {
 				render.Render(w, r, payloads.ErrNotFound)
 				return
 			}
-			session, err = models.LayerInstance().Session.GetByID(id)
+			session, err = models.LayerInstance().Session.GetSession(id)
 		} else {
 			render.Render(w, r, payloads.ErrUnauthorized(err))
 			return
@@ -128,27 +128,33 @@ func CreateUser(w http.ResponseWriter, r *http.Request) {
 
 	// Creating a new User
 	user := data.User
-	userID, err := models.LayerInstance().User.Insert(*user)
+	returnedUser, err := models.LayerInstance().User.Insert(*user)
 
 	if err != nil {
 		render.Render(w, r, payloads.ErrInvalidRequest(err))
 		return
 	}
-	user.ID = userID
+	userID := returnedUser.ID
 
 	var jwt string
 	// Try to get current session
 	// TODO: cache
-	sessions, err := models.LayerInstance().Session.Get(models.SessionQuery{UserID: userID})
+	session, err := models.LayerInstance().Session.GetUser(userID)
 
 	// Session not found, create new session
-	if err != nil || len(sessions) == 0 {
-		jwt, err = models.LayerInstance().Session.Insert(models.Session{UserID: userID})
+	if err != nil || session == (models.Session{}) {
+		returnedSession, err := models.LayerInstance().Session.Insert(userID)
+		if err != nil {
+			render.Render(w, r, payloads.ErrInternalError(err))
+			return
+		} else {
+			jwt = returnedSession.JWT
+		}
 	} else {
-		jwt = sessions[0].JWT
+		jwt = session.JWT
 	}
 	render.Status(r, http.StatusCreated)
-	render.Render(w, r, payloads.NewSessionResponse(jwt, user))
+	render.Render(w, r, payloads.NewSessionResponse(jwt, &returnedUser))
 }
 
 // LoginUser logs in a new user based on the provided credentials
@@ -175,13 +181,19 @@ func LoginUser(w http.ResponseWriter, r *http.Request) {
 	var jwt string
 	// Try to get current session
 	// TODO: cache
-	sessions, err := models.LayerInstance().Session.Get(models.SessionQuery{UserID: found.ID})
+	session, err := models.LayerInstance().Session.GetUser(found.ID)
 
 	// Session not found, create new session
-	if err != nil || len(sessions) == 0 {
-		jwt, err = models.LayerInstance().Session.Insert(models.Session{UserID: found.ID})
+	if err != nil || session == (models.Session{}) {
+		returnedSession, err := models.LayerInstance().Session.Insert(found.ID)
+		if err != nil {
+			render.Render(w, r, payloads.ErrInternalError(err))
+			return
+		} else {
+			jwt = returnedSession.JWT
+		}
 	} else {
-		jwt = sessions[0].JWT
+		jwt = session.JWT
 	}
 	render.Status(r, http.StatusOK)
 	render.Render(w, r, payloads.NewSessionResponse(jwt, &found))

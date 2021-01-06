@@ -1,13 +1,14 @@
 package models
 
 import (
+	"context"
 	"fmt"
 	"time"
 
 	"github.com/UN0wen/pricewatch-vn/server/db"
 	"github.com/UN0wen/pricewatch-vn/server/utils"
+	"github.com/georgysavva/scany/pgxscan"
 	"github.com/google/uuid"
-	"github.com/mitchellh/mapstructure"
 	"github.com/pkg/errors"
 )
 
@@ -26,8 +27,8 @@ type SessionTable struct {
 // Session represents a single row in the SessionTable
 type Session struct {
 	ID           uuid.UUID `valid:"required" json:"id"`
-	UserID       uuid.UUID `valid:"required" json:"userid"`
-	ExpiresAfter time.Time `valid:"required" json:"expiresafter"`
+	UserID       uuid.UUID `valid:"required" json:"user_id" db:"user_id"`
+	ExpiresAfter time.Time `valid:"required" json:"expires_after" db:"expires_after"`
 	JWT          string    `valid:"required" json:"jwt"`
 }
 
@@ -37,85 +38,71 @@ type SessionQuery struct {
 	UserID uuid.UUID
 }
 
-// NewSessionTable creates a new table in the database for sessions.
-// It takes a reference to an open db connection and returns the constructed table
-func NewSessionTable(db *db.Db) (sessionTable SessionTable, err error) {
-	// Ensure connection is alive
-	if db == nil {
-		err = errors.New("Invalid database connection")
+// GetUser returns a single session for user
+func (table *SessionTable) GetUser(userID uuid.UUID) (session Session, err error) {
+	var query string
+	var values []interface{}
+	query = fmt.Sprintf(`SELECT * FROM %s WHERE user_id=$1 ORDER BY expires_after DESC LIMIT 1;`, SessionView)
+
+	values = append(values, userID)
+	utils.Sugar.Infof("SQL Query: %s", query)
+	utils.Sugar.Infof("Values: %s", values)
+
+	session = Session{}
+	err = pgxscan.Get(context.Background(), table.connection.Pool, &session, query, values...)
+	if err != nil {
+		err = errors.Wrapf(err, "Get query failed to execute")
 		return
 	}
-	sessionTable.connection = db
-	// Construct query
-	query := fmt.Sprintf(`
-	CREATE TABLE IF NOT EXISTS %s (
-			id uuid NOT NULL,
-			userid uuid REFERENCES users(id) ON DELETE CASCADE,
-			expiresafter timestamptz NOT NULL,
-			jwt TEXT NOT NULL,
-			PRIMARY KEY (id, userid)
-		)`, SessionTableName)
-	// Create the actual table
-	if err = sessionTable.connection.CreateTable(query); err != nil {
-		err = errors.Wrapf(err, "Could not initialize table %s", SessionTableName)
-	}
 
-	// Create the view
-	viewQuery := fmt.Sprintf(`
-	SELECT * FROM %s
-	WHERE expiresafter > now()
-	`, SessionTableName)
-
-	// Create the view
-	if err = sessionTable.connection.CreateView(SessionView, viewQuery); err != nil {
-		err = errors.Wrapf(err, "Could not initialize view %s", SessionView)
-	}
 	return
 }
 
-// Get gets stuffs
-func (table *SessionTable) Get(sessionQuery SessionQuery) (sessions []Session, err error) {
-	allData, err := table.connection.Get(db.SearchOptions{Query: sessionQuery, TableName: SessionView})
+// GetSession finds a session by id
+func (table *SessionTable) GetSession(sessionID uuid.UUID) (session Session, err error) {
+	var query string
+	var values []interface{}
+	query = fmt.Sprintf(`SELECT * FROM %s WHERE id=$1 ORDER BY expires_after DESC LIMIT 1;`, SessionView)
+
+	values = append(values, sessionID)
+	utils.Sugar.Infof("SQL Query: %s", query)
+	utils.Sugar.Infof("Values: %s", values)
+
+	session = Session{}
+	err = pgxscan.Get(context.Background(), table.connection.Pool, &session, query, values...)
 	if err != nil {
+		err = errors.Wrapf(err, "Get query failed to execute")
 		return
 	}
-	for _, data := range allData {
-		session := Session{}
-		err = mapstructure.Decode(data, &session)
-		if err != nil {
-			return
-		}
-		sessions = append(sessions, session)
-	}
+
 	return
 }
 
-// GetByID finds a session by id
-func (table *SessionTable) GetByID(id uuid.UUID) (session Session, err error) {
-	data, err := table.connection.GetByID(id, SessionView)
+// Insert adds a new session into the table and return the new session.
+func (table *SessionTable) Insert(userID uuid.UUID) (returnedSession Session, err error) {
+	expiresAfter := time.Now().Add(time.Hour * 24 * 7)
+	sessionID, _ := uuid.NewRandom()
+
+	jwt := utils.GenerateJWT(sessionID)
+	var query string
+	var values []interface{}
 	if err != nil {
-		err = errors.Wrapf(err, "Get query failed for session with id: %s", id)
+		err = errors.Wrap(err, "Missing fields in ItemPrice")
 		return
 	}
-	err = mapstructure.Decode(data, &session)
-	if err != nil {
-		err = errors.Wrapf(err, "Get query failed for session with id: %s", id)
-	}
-	return
-}
 
-// Insert adds a new session into the table and return the JWT.
-func (table *SessionTable) Insert(session Session) (jwt string, err error) {
-	session.ExpiresAfter = time.Now().Add(time.Hour * 24)
-	sessionID, _ := uuid.NewUUID()
-	session.ID = sessionID
+	values = append(values, sessionID, userID, expiresAfter, jwt)
+	query = fmt.Sprintf(`INSERT INTO "%s" (id, user_id, expires_after, jwt) VALUES ($1, $2, $3, $4) RETURNING *;`, SessionTableName)
 
-	jwt = utils.GenerateJWT(sessionID)
-	session.JWT = jwt
-	err = table.connection.Insert(SessionTableName, session)
+	utils.Sugar.Infof("SQL Query: %s", query)
+	utils.Sugar.Infof("Values: %s", values)
+
+	returnedSession = Session{}
+	err = pgxscan.Get(context.Background(), table.connection.Pool, &returnedSession, query, values...)
 	if err != nil {
-		err = errors.Wrapf(err, "Insertion query failed for new session: %s", session)
+		err = errors.Wrapf(err, "Insertion query failed to execute")
 	}
+
 	return
 }
 

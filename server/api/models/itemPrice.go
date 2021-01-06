@@ -1,18 +1,21 @@
 package models
 
 import (
+	"context"
 	"fmt"
 	"time"
 
 	"github.com/UN0wen/pricewatch-vn/server/db"
+	"github.com/UN0wen/pricewatch-vn/server/utils"
+	"github.com/asaskevich/govalidator"
+	"github.com/georgysavva/scany/pgxscan"
 	"github.com/google/uuid"
-	"github.com/mitchellh/mapstructure"
 	"github.com/pkg/errors"
 )
 
 // ItemPriceTableName is the name of the item's price table in the db
 const (
-	ItemPriceTableName = "itemprices"
+	ItemPriceTableName = "item_prices"
 )
 
 // ItemPriceTable represents the connection to the db instance
@@ -22,7 +25,7 @@ type ItemPriceTable struct {
 
 // ItemPrice represents a single row in the ItemPriceTable
 type ItemPrice struct {
-	ID        uuid.UUID `valid:"required" json:"id"`
+	ItemID    uuid.UUID `valid:"required" json:"item_id" db:"item_id"`
 	Time      time.Time `valid:"-" json:"time"`
 	Price     int64     `valid:"required" json:"price"`
 	Available bool      `valid:"required" json:"available"`
@@ -36,81 +39,65 @@ type ItemPriceQuery struct {
 	Available bool
 }
 
-// NewItemPriceTable creates a new table in the database for items.
-// It takes a reference to an open db connection and returns the constructed table
-func NewItemPriceTable(db *db.Db) (itemPriceTable ItemPriceTable, err error) {
-	// Ensure connection is alive
-	if db == nil {
-		err = errors.New("Invalid database connection")
+// GetAllPrices gets all prices for a certain item
+func (table *ItemPriceTable) GetAllPrices(itemID uuid.UUID) (itemPrices []ItemPrice, err error) {
+	var query string
+	var values []interface{}
+
+	query = fmt.Sprintf(`SELECT * FROM %s WHERE item_id=$1 ORDER BY time ASC;`, ItemPriceTableName)
+
+	values = append(values, itemID)
+	utils.Sugar.Infof("SQL Query: %s", query)
+	utils.Sugar.Infof("Values: %s", values)
+
+	err = pgxscan.Select(context.Background(), table.connection.Pool, &itemPrices, query, values...)
+	if err != nil {
+		err = errors.Wrapf(err, "Get query failed to execute")
 		return
-	}
-	itemPriceTable.connection = db
-	// Construct query
-	query := fmt.Sprintf(`
-	CREATE TABLE IF NOT EXISTS %s (
-			id uuid NOT NULL REFERENCES %s(id) ON DELETE CASCADE, 
-			time TIMESTAMPTZ NOT NULL DEFAULT NOW(),
-			price INT,
-			available BOOLEAN DEFAULT TRUE,
-			PRIMARY KEY (id, time)
-		)`, ItemPriceTableName, ItemTableName)
-	// Create the actual table
-	if err = itemPriceTable.connection.CreateTable(query); err != nil {
-		err = errors.Wrapf(err, "Could not initialize table %s", ItemPriceTableName)
 	}
 	return
 }
 
-// Get gets stuffs
-func (table *ItemPriceTable) Get(itemPriceQuery ItemPriceQuery, orderBy string, limit int64) (itemPrices []ItemPrice, err error) {
-	options := db.SearchOptions{
-		Query:      itemPriceQuery,
-		TableName:  ItemPriceTableName,
-		OrderQuery: "time",
-		Order:      orderBy,
-		Limit:      limit,
-	}
+// GetPrice gets the most current price of an item
+func (table *ItemPriceTable) GetPrice(itemID uuid.UUID) (itemPrice ItemPrice, err error) {
+	var query string
+	var values []interface{}
+	query = fmt.Sprintf(`SELECT * FROM %s WHERE item_id=$1 ORDER BY time DESC LIMIT 1;`, ItemPriceTableName)
 
-	allData, err := table.connection.Get(options)
+	values = append(values, itemID)
+	utils.Sugar.Infof("SQL Query: %s", query)
+	utils.Sugar.Infof("Values: %s", values)
+
+	err = pgxscan.Get(context.Background(), table.connection.Pool, &itemPrice, query, values...)
 	if err != nil {
+		err = errors.Wrapf(err, "Get query failed to execute")
 		return
 	}
-	for _, data := range allData {
-		itemPrice := ItemPrice{}
-		err = mapstructure.Decode(data, &itemPrice)
-		if err != nil {
-			return
-		}
-		itemPrices = append(itemPrices, itemPrice)
-	}
+
 	return
 }
 
 // Insert adds a new item into the table.
-func (table *ItemPriceTable) Insert(itemPrice ItemPrice) (err error) {
-	itemPrice.Time = time.Now()
-	err = table.connection.Insert(ItemPriceTableName, itemPrice)
+func (table *ItemPriceTable) Insert(itemPrice ItemPrice) (returnedItemPrice ItemPrice, err error) {
+	var query string
+	var values []interface{}
+	_, err = govalidator.ValidateStruct(itemPrice)
 	if err != nil {
-		err = errors.Wrapf(err, "Insertion query failed for new itemprice: %s", itemPrice)
-	}
-	return
-}
-
-// Update will update the item row with an incoming item
-func (table *ItemPriceTable) Update(id uuid.UUID, newItemPrice ItemPrice) (updated ItemPrice, err error) {
-	data, err := table.connection.Update(id, ItemPriceTableName, newItemPrice)
-	if err != nil {
+		err = errors.Wrap(err, "Missing fields in ItemPrice")
 		return
 	}
-	err = mapstructure.Decode(data[0], &updated)
-	return
-}
 
-// DeleteByID permanently removes the item with uuid from table
-func (table *ItemPriceTable) DeleteByID(id uuid.UUID) (err error) {
-	err = table.connection.DeleteByID(id, ItemPriceTableName)
+	values = append(values, itemPrice.ItemID, time.Now().Format(time.RFC3339), itemPrice.Price, itemPrice.Available)
+	query = fmt.Sprintf(`INSERT INTO "%s" (item_id, time, price, available) VALUES ($1, $2, $3, $4) RETURNING *;`, ItemPriceTableName)
+
+	utils.Sugar.Infof("SQL Query: %s", query)
+	utils.Sugar.Infof("Values: %s", values)
+
+	returnedItemPrice = ItemPrice{}
+	err = pgxscan.Get(context.Background(), table.connection.Pool, &returnedItemPrice, query, values...)
 	if err != nil {
-		err = errors.Wrapf(err, "Delete query failed for itemprice with id: %s", id)
+		err = errors.Wrapf(err, "Insertion query failed to execute")
 	}
+
 	return
 }

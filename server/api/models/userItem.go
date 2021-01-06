@@ -1,9 +1,13 @@
 package models
 
 import (
+	"context"
 	"fmt"
 
 	"github.com/UN0wen/pricewatch-vn/server/db"
+	"github.com/UN0wen/pricewatch-vn/server/utils"
+	"github.com/asaskevich/govalidator"
+	"github.com/georgysavva/scany/pgxscan"
 	"github.com/google/uuid"
 	"github.com/mitchellh/mapstructure"
 	"github.com/pkg/errors"
@@ -11,7 +15,7 @@ import (
 
 // UserItemTableName is the name of the user table in the db
 const (
-	UserItemTableName = "useritems"
+	UserItemTableName = "user_items"
 )
 
 // UserItemTable represents the connection to the db instance
@@ -21,8 +25,8 @@ type UserItemTable struct {
 
 // UserItem represents a single row in the UserItemTable
 type UserItem struct {
-	UserID uuid.UUID `valid:"required" json:"userid"`
-	ItemID uuid.UUID `valid:"required" json:"itemid"`
+	UserID uuid.UUID `valid:"required" json:"user_id" db:"user_id"`
+	ItemID uuid.UUID `valid:"required" json:"item_id" db:"item_id"`
 }
 
 // UserItemQuery represents all of the rows the item can be queried over
@@ -31,53 +35,46 @@ type UserItemQuery struct {
 	ItemID uuid.UUID
 }
 
-// NewUserItemTable creates a new table in the database for items.
-// It takes a reference to an open db connection and returns the constructed table
-func NewUserItemTable(db *db.Db) (userItemTable UserItemTable, err error) {
-	// Ensure connection is alive
-	if db == nil {
-		err = errors.New("Invalid database connection")
-		return
-	}
-	userItemTable.connection = db
-	// Construct query
-	query := fmt.Sprintf(`
-	CREATE TABLE IF NOT EXISTS %s (
-			userid uuid NOT NULL REFERENCES %s (id) ON DELETE CASCADE,
-			itemid uuid NOT NULL REFERENCES %s (id) ON DELETE CASCADE,
-			PRIMARY KEY (userid, itemid)
-			
-		)`, UserItemTableName, UserTableName, ItemTableName)
-	// Create the actual table
-	if err = userItemTable.connection.CreateTable(query); err != nil {
-		err = errors.Wrapf(err, "Could not initialize table %s", UserItemTableName)
-	}
-	return
-}
+// GetByUser gets all items followed by user with userID
+func (table *UserItemTable) GetByUser(userID uuid.UUID) (userItems []UserItem, err error) {
+	var query string
+	var values []interface{}
+	query = fmt.Sprintf(`SELECT * FROM %s WHERE user_id=$1;`, UserItemTableName)
 
-// Get gets stuffs
-func (table *UserItemTable) Get(userItemQuery UserItemQuery) (userItems []UserItem, err error) {
-	allData, err := table.connection.Get(db.SearchOptions{Query: userItemQuery, TableName: UserItemTableName, Op: "AND"})
+	values = append(values, userID)
+	utils.Sugar.Infof("SQL Query: %s", query)
+	utils.Sugar.Infof("Values: %s", values)
+
+	err = pgxscan.Select(context.Background(), table.connection.Pool, &userItems, query, values...)
 	if err != nil {
+		err = errors.Wrapf(err, "Get query failed to execute")
 		return
-	}
-	for _, data := range allData {
-		userItem := UserItem{}
-		err = mapstructure.Decode(data, &userItem)
-		if err != nil {
-			return
-		}
-		userItems = append(userItems, userItem)
 	}
 	return
 }
 
 // Insert adds a new item into the table.
-func (table *UserItemTable) Insert(userItem UserItem) (err error) {
-	err = table.connection.Insert(UserItemTableName, userItem)
+func (table *UserItemTable) Insert(userItem UserItem) (returnedUserItem UserItem, err error) {
+	var query string
+	var values []interface{}
+	_, err = govalidator.ValidateStruct(userItem)
 	if err != nil {
-		err = errors.Wrapf(err, "Insertion query failed for new useritem: %s", userItem)
+		err = errors.Wrap(err, "Missing fields in UserItem")
+		return
 	}
+
+	values = append(values, userItem.UserID, userItem.ItemID)
+	query = fmt.Sprintf(`INSERT INTO "%s" (user_id, item_id) VALUES ($1, $2) RETURNING *;`, UserItemTableName)
+
+	utils.Sugar.Infof("SQL Query: %s", query)
+	utils.Sugar.Infof("Values: %s", values)
+
+	returnedUserItem = UserItem{}
+	err = pgxscan.Get(context.Background(), table.connection.Pool, &returnedUserItem, query, values...)
+	if err != nil {
+		err = errors.Wrapf(err, "Insertion query failed to execute")
+	}
+
 	return
 }
 

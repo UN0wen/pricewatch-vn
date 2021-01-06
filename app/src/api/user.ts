@@ -1,4 +1,4 @@
-import { AuthDispatch, AuthReducerActions } from './reducer'
+import { AuthDispatch, AuthReducerActions } from '../contexts/reducer'
 import { CookieWrapper } from '../utils/storage'
 import { AxiosInstance } from '../utils/axios'
 

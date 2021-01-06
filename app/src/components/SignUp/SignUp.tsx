@@ -15,7 +15,7 @@ import {
 import Routes from '../../utils/routes'
 import { useForm } from 'react-hook-form'
 import { useAuthDispatch } from '../../contexts/context'
-import { createUser } from '../../contexts/actions'
+import { createUser } from '../../api/user'
 import SignUpModal from './components/SignUpModal'
 
 const useStyles = makeStyles((theme) => ({

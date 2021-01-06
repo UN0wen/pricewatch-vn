@@ -10,7 +10,6 @@ import (
 	"time"
 
 	"github.com/UN0wen/pricewatch-vn/server/utils"
-	"github.com/asaskevich/govalidator"
 	"github.com/google/uuid"
 	"github.com/pkg/errors"
 
@@ -22,17 +21,17 @@ import (
 // TimeParams are parameters of type time.Time
 var (
 	AutoParam = map[string]bool{
-		"timecreated": true,
+		"created": true,
 	}
 	SkipParam = map[string]bool{
 		"post_results": true,
 		"pre_results":  true,
 	}
 	TimeParam = map[string]bool{
-		"timecreated":  true,
-		"timeloggedin": true,
-		"expiresafter": true,
-		"time":         true,
+		"created":       true,
+		"logged_in":     true,
+		"expires_after": true,
+		"time":          true,
 	}
 )
 
@@ -55,38 +54,52 @@ type Config struct {
 	User     string
 	Password string
 	Database string
+	URL      string
 }
 
 // Setup setups the database
-func Setup(cfg Config) (db Db, err error) {
-	if cfg.Host == "" || cfg.Port == "" || cfg.User == "" ||
-		cfg.Password == "" || cfg.Database == "" {
-		err = errors.New("Provide all fields for config")
-		return
+func Setup(cfg Config) (Db, error) {
+	var db Db
+	if cfg.URL == "" {
+		if cfg.Host == "" || cfg.Port == "" || cfg.User == "" ||
+			cfg.Password == "" || cfg.Database == "" {
+			err := errors.New("Provide all fields for config")
+			return db, err
+		}
+
+		db.cfg = cfg
+		cfgDNS := fmt.Sprintf(
+			"user=%s password=%s dbname=%s host=%s port=%s sslmode=disable",
+			cfg.User, cfg.Password, cfg.Database, cfg.Host, cfg.Port)
+
+		config, err := pgxpool.ParseConfig(cfgDNS)
+		if err != nil {
+			err = errors.Wrapf(err, "Cannot parse config string")
+			return db, err
+		}
+
+		// PGXPool configs
+		config.MaxConns = 10
+
+		pool, err := pgxpool.ConnectConfig(context.Background(), config)
+		if err != nil {
+			err = errors.Wrapf(err, "Unable to connect to database")
+			return db, err
+		}
+
+		db.Pool = pool
+		utils.Sugar.Infof("Database created with config string: %s", config.ConnString())
+
+	} else {
+		pool, err := pgxpool.Connect(context.Background(), cfg.URL)
+		if err != nil {
+			err = errors.Wrapf(err, "Unable to connect to database")
+			return db, err
+		}
+		db.Pool = pool
+		utils.Sugar.Infof("Database created with URL: %s", cfg.URL)
+
 	}
-	db.cfg = cfg
-	cfgDNS := fmt.Sprintf(
-		"user=%s password=%s dbname=%s host=%s port=%s sslmode=disable",
-		cfg.User, cfg.Password, cfg.Database, cfg.Host, cfg.Port)
-
-	config, err := pgxpool.ParseConfig(cfgDNS)
-	if err != nil {
-		err = errors.Wrapf(err, "Cannot parse config string")
-		return
-	}
-
-	// PGXPool configs
-	config.MaxConns = 10
-
-	pool, err := pgxpool.ConnectConfig(context.Background(), config)
-	if err != nil {
-		err = errors.Wrapf(err, "Unable to connect to database")
-		return
-	}
-
-	db.Pool = pool
-
-	utils.Sugar.Infof("Database created with config string: %s", config.ConnString())
 	return db, nil
 }
 
@@ -97,45 +110,6 @@ func (db *Db) Close() {
 	}
 
 	db.Pool.Close()
-	return
-}
-
-// CreateTable executes the query given
-func (db *Db) CreateTable(query string) (err error) {
-	utils.Sugar.Infof("SQL Query: %s", query)
-
-	if _, err = db.Pool.Exec(context.Background(), query); err != nil {
-		err = errors.Wrapf(err, "Table creation query failed")
-	}
-
-	return
-}
-
-// CreateIndex creates an index on tablename
-func (db *Db) CreateIndex(tableName, indexType, indexColumn string) (err error) {
-	var query bytes.Buffer
-	query.WriteString(fmt.Sprintf("CREATE INDEX IF NOT EXISTS %s_%s_idx ON %s USING %s (%s)", tableName, indexColumn, tableName, indexType, indexColumn))
-
-	utils.Sugar.Infof("SQL Query: %s", query.String())
-	_, err = db.Pool.Exec(context.Background(), query.String())
-	if err != nil {
-		err = errors.Wrapf(err, "Index creation query failed")
-	}
-	return
-}
-
-// CreateView creates an view on tablename with query
-func (db *Db) CreateView(viewName, viewQuery string) (err error) {
-	var query bytes.Buffer
-
-	query.WriteString(fmt.Sprintf("CREATE OR REPLACE VIEW %s AS %s", viewName, viewQuery))
-
-	utils.Sugar.Infof("SQL Query: %s", query.String())
-
-	_, err = db.Pool.Exec(context.Background(), query.String())
-	if err != nil {
-		err = errors.Wrapf(err, "View creation query failed")
-	}
 	return
 }
 
@@ -152,163 +126,10 @@ type SearchOptions struct {
 	Limit      int64       // Number of rows to select
 }
 
-// Get attempts to provide a generalized search through the specified table based on the provided queries.
-// It takes a query for the queryable fields, and an operator such as "AND" or "OR" to define the context of the search. It takes in a table name to act on.
-// It returns all the data for all found objects and an error if one exists.
-func (db *Db) Get(options SearchOptions) (objects []map[string]interface{}, err error) {
-	var query bytes.Buffer
-	if options.CompareOp == "" {
-		options.CompareOp = "="
-	}
-
-	query.WriteString(fmt.Sprintf("SELECT * FROM %s", options.TableName))
-
-	// Use reflection to analyze object fields
-	fields := reflect.ValueOf(options.Query)
-	first := true
-	var values []interface{}
-	vIdx := 1
-	for i := 0; i < fields.NumField(); i++ {
-		v := fields.Field(i).Interface()
-		// Skip fields that are not set to query on
-		if !isUndeclared(v) {
-			if first {
-				query.WriteString(" WHERE ")
-				first = false
-			} else {
-				if options.Op != "" {
-					query.WriteString(fmt.Sprintf(" %s ", options.Op))
-				}
-			}
-			k := strings.ToLower(fields.Type().Field(i).Name)
-			v = fmt.Sprintf("%v", v)
-			values = append(values, v)
-			query.WriteString(fmt.Sprintf("%s%s$%d", k, options.CompareOp, vIdx))
-			vIdx++
-		}
-	}
-
-	if options.OrderQuery != "" && options.Order != "" {
-		query.WriteString(fmt.Sprintf(" ORDER BY %s %s", options.OrderQuery, options.Order))
-	}
-
-	if options.Limit != 0 {
-		query.WriteString(fmt.Sprintf(" LIMIT %d", options.Limit))
-	}
-
-	query.WriteString(";")
-
-	utils.Sugar.Infof("SQL Query: %s", query.String())
-	utils.Sugar.Infof("Values: %v", values)
-
-	rows, err := db.Pool.Query(context.Background(), query.String(), values...)
-	if err != nil {
-		err = errors.Wrapf(err, "Get query failed to execute")
-		return
-	}
-
-	objects, err = mapRows(rows)
-	return
-}
-
-// GetByID is GET() but for an ID.
-// It returns the data for the found object, or an error if one exists.
-func (db *Db) GetByID(id uuid.UUID, table string) (data map[string]interface{}, err error) {
-	query := idQuery{ID: id}
-	objs, err := db.Get(SearchOptions{Query: query, TableName: table, Limit: 1})
-	if err != nil {
-		err = errors.Wrapf(err, "Search error")
-		return
-	} else if objs == nil {
-		err = errors.New(fmt.Sprintf("Failed to find object with id: %s", id.String()))
-		return
-	} else if len(objs) != 1 {
-		err = errors.New(fmt.Sprintf("Found duplicate objects with id: %s", id.String()))
-		return
-	}
-	data = objs[0]
-	return
-}
-
-// Insert will put a new model row within the specified table in the DB, verifying all fields are valid.
-// It takes in the object to insert and the table name.
-// It returns id if it is successful.
-func (db *Db) Insert(table, model interface{}) (err error) {
-	modelName := reflect.TypeOf(model).String()
-
-	_, err = govalidator.ValidateStruct(model)
-	if err != nil {
-		err = errors.Wrapf(err, "Invalid field in model: %s", modelName)
-		return
-	}
-
-	var values []interface{}
-	var vStr, kStr bytes.Buffer
-	vIdx := 1
-	fields := reflect.ValueOf(model)
-	if fields.NumField() < 1 {
-		err = errors.New("Invalid number of fields given")
-		return
-	}
-	first := true
-	for i := 0; i < fields.NumField(); i++ {
-		k := strings.ToLower(fields.Type().Field(i).Name)
-		v := fields.Field(i).Interface()
-		// Skip auto params and skippable params
-		if AutoParam[k] || SkipParam[k] {
-			continue
-		} else if TimeParam[k] { // convert time types to String
-			if t, ok := v.(time.Time); ok {
-				v = t.Format(time.RFC3339)
-			}
-		}
-		if first {
-			first = false
-		} else {
-			vStr.WriteString(", ")
-			kStr.WriteString(", ")
-		}
-		kStr.WriteString(k)
-		vStr.WriteString(fmt.Sprintf("$%d", vIdx))
-		if k == "password" {
-			hash, e := hashPassword(v.(string))
-			if e != nil {
-				err = errors.Wrapf(e, "Password hash failed")
-				return
-			}
-			values = append(values, hash)
-		} else {
-			values = append(values, v)
-		}
-
-		vIdx++
-	}
-	var query bytes.Buffer
-	query.WriteString(fmt.Sprintf(`INSERT INTO "%s" (%s) VALUES (%s);`, table, kStr.String(), vStr.String()))
-
-	utils.Sugar.Infof("SQL Query: %s", query.String())
-	utils.Sugar.Infof("Values: %v", values)
-
-	_, err = db.Pool.Exec(context.Background(), query.String(), values...)
-	if err != nil {
-		err = errors.Wrapf(err, "Insertion query failed to execute")
-	}
-
-	return
-}
-
-type idQuery struct {
-	ID uuid.UUID
-}
-
 // Update updates the model row(s) in the table based on the incoming object.
 // It takes in an id to identify the object in the DB, a string representing the table name and the fileds to update the object on.
 // It returns the data representing an updated model.
 func (db *Db) Update(id uuid.UUID, table string, updates interface{}) (data []map[string]interface{}, err error) {
-	_, err = db.GetByID(id, table)
-	if err != nil {
-		return
-	}
 	var query bytes.Buffer
 	query.WriteString(fmt.Sprintf("UPDATE %s SET", table))
 	var values []interface{}
@@ -320,14 +141,21 @@ func (db *Db) Update(id uuid.UUID, table string, updates interface{}) (data []ma
 	}
 	first := true
 	for i := 0; i < fields.NumField(); i++ {
-		k := strings.ToLower(fields.Type().Field(i).Name)
+		// Check if there's a tag for db row name
+		k := fields.Type().Field(i).Tag.Get("db")
+
+		if k == "" {
+			k = strings.ToLower(fields.Type().Field(i).Name)
+		}
+
 		v := fields.Field(i).Interface()
 		// Skip auto params or unset fields on the incoming User
 		// Also skip the ID field since we dont ever want to update it
-		if AutoParam[k] || SkipParam[k] || isUndeclared(fields.Field(i).Interface()) || k == "id" {
+		if AutoParam[k] || SkipParam[k] || isUndeclared(v) || k == "id" {
 			continue
 		} else if TimeParam[k] { // convert time types to String
 			if t, ok := v.(time.Time); ok {
+				utils.Sugar.Infof("%s", v)
 				v = t.Format(time.RFC3339)
 			}
 		}
@@ -339,7 +167,7 @@ func (db *Db) Update(id uuid.UUID, table string, updates interface{}) (data []ma
 		}
 
 		if k == "password" {
-			hash, e := hashPassword(v.(string))
+			hash, e := utils.HashPassword(v.(string))
 			if e != nil {
 				err = errors.Wrapf(e, "Password hash failed")
 				return
@@ -419,10 +247,6 @@ func (db *Db) Delete(options SearchOptions) (err error) {
 
 // DeleteByID removes one row from table where id=id
 func (db *Db) DeleteByID(id uuid.UUID, table string) (err error) {
-	_, err = db.GetByID(id, table)
-	if err != nil {
-		return
-	}
 	query := fmt.Sprintf("DELETE FROM %s WHERE id=$1;", table)
 
 	utils.Sugar.Infof("SQL Query: %s", query)

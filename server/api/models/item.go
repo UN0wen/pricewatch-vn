@@ -1,15 +1,21 @@
 package models
 
 import (
+	"context"
 	"fmt"
 
 	"github.com/UN0wen/pricewatch-vn/server/db"
+	"github.com/UN0wen/pricewatch-vn/server/utils"
+	"github.com/asaskevich/govalidator"
+	"github.com/georgysavva/scany/pgxscan"
 	"github.com/google/uuid"
+
 	"github.com/mitchellh/mapstructure"
 	"github.com/pkg/errors"
 )
 
-// ItemTableName is the name of the user table in the db
+// ItemTableName is the name of the item table in the db
+// ItemLatestView is the name of the item + price view
 const (
 	ItemTableName = "items"
 )
@@ -21,10 +27,10 @@ type ItemTable struct {
 
 // Item represents a single row in the ItemTable
 type Item struct {
-	ID          uuid.UUID `valid:"required" json:"id"`
+	ID          uuid.UUID `valid:"-" json:"id"`
 	Name        string    `valid:"required" json:"name"`
 	Description string    `valid:"required" json:"description"`
-	ImageURL    string    `valid:"required" json:"imageurl"`
+	ImageURL    string    `valid:"required" json:"image_url" db:"image_url"`
 	URL         string    `valid:"required" json:"url"`
 	Currency    string    `valid:"required" json:"currency"`
 }
@@ -35,71 +41,63 @@ type ItemQuery struct {
 	Name string
 }
 
-// NewItemTable creates a new table in the database for items.
-// It takes a reference to an open db connection and returns the constructed table
-func NewItemTable(db *db.Db) (itemTable ItemTable, err error) {
-	// Ensure connection is alive
-	if db == nil {
-		err = errors.New("Invalid database connection")
-		return
-	}
-	itemTable.connection = db
-	// Construct query
-	query := fmt.Sprintf(`
-	CREATE TABLE IF NOT EXISTS %s (
-			id uuid NOT NULL, 
-			name TEXT NOT NULL,
-			description TEXT,
-			imageurl TEXT NOT NULL, 
-			url TEXT NOT NULL,
-			currency TEXT NOT NULL,
-			PRIMARY KEY (id)
-		)`, ItemTableName)
-	// Create the actual table
-	if err = itemTable.connection.CreateTable(query); err != nil {
-		err = errors.Wrapf(err, "Could not initialize table %s", ItemTableName)
-	}
-	return
-}
+// GetAll gets all items from the table
+func (table *ItemTable) GetAll() (items []Item, err error) {
+	var query string
 
-// Get gets stuffs
-func (table *ItemTable) Get(itemQuery ItemQuery) (items []Item, err error) {
-	allData, err := table.connection.Get(db.SearchOptions{Query: itemQuery, TableName: ItemTableName})
+	query = fmt.Sprintf(`SELECT * FROM %s;`, ItemTableName)
+
+	utils.Sugar.Infof("SQL Query: %s", query)
+
+	err = pgxscan.Select(context.Background(), table.connection.Pool, &items, query)
 	if err != nil {
+		err = errors.Wrapf(err, "Get query failed to execute")
 		return
-	}
-	for _, data := range allData {
-		item := Item{}
-		err = mapstructure.Decode(data, &item)
-		if err != nil {
-			return
-		}
-		items = append(items, item)
 	}
 	return
 }
 
 // GetByID finds an item by id
 func (table *ItemTable) GetByID(id uuid.UUID) (item Item, err error) {
-	data, err := table.connection.GetByID(id, ItemTableName)
+	var query string
+	var values []interface{}
+	query = fmt.Sprintf(`SELECT * FROM %s WHERE id=$1;`, ItemTableName)
+
+	values = append(values, id)
+	utils.Sugar.Infof("SQL Query: %s", query)
+	utils.Sugar.Infof("Values: %s", values)
+
+	err = pgxscan.Get(context.Background(), table.connection.Pool, &item, query, values...)
 	if err != nil {
+		err = errors.Wrapf(err, "Get query failed to execute")
 		return
 	}
-	err = mapstructure.Decode(data, &item)
-	if err != nil {
-		err = errors.Wrapf(err, "Get query failed for item with id: %s", id)
-	}
+
 	return
 }
 
 // Insert adds a new item into the table.
-func (table *ItemTable) Insert(item Item) (itemID uuid.UUID, err error) {
-	itemID, _ = uuid.NewUUID()
-	item.ID = itemID
-	err = table.connection.Insert(ItemTableName, item)
+func (table *ItemTable) Insert(item Item) (returnedItem Item, err error) {
+	var query string
+	var values []interface{}
+	_, err = govalidator.ValidateStruct(item)
 	if err != nil {
-		err = errors.Wrapf(err, "Insertion query failed for new item: %s", item)
+		err = errors.Wrap(err, "Missing fields in Item")
+		return
 	}
+
+	values = append(values, item.Name, item.Description, item.ImageURL, item.URL, item.Currency)
+	query = fmt.Sprintf(`INSERT INTO "%s" (name, description, image_url, url, currency) VALUES ($1, $2, $3, $4, $5) RETURNING *;`, ItemTableName)
+
+	utils.Sugar.Infof("SQL Query: %s", query)
+	utils.Sugar.Infof("Values: %s", values)
+
+	returnedItem = Item{}
+	err = pgxscan.Get(context.Background(), table.connection.Pool, &returnedItem, query, values...)
+	if err != nil {
+		err = errors.Wrapf(err, "Insertion query failed to execute")
+	}
+
 	return
 }
 

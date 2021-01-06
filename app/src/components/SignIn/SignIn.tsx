@@ -14,7 +14,7 @@ import {
   Container,
 } from '@material-ui/core'
 import Routes from '../../utils/routes'
-import { loginUser } from '../../contexts/actions'
+import { loginUser } from '../../api/user'
 import { useAuthDispatch } from '../../contexts/context'
 import SignInModal from './components/SignInModal'
 

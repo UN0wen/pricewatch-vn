@@ -4,9 +4,13 @@ package models
 // UserID -> email to send to
 
 import (
+	"context"
 	"fmt"
 
 	"github.com/UN0wen/pricewatch-vn/server/db"
+	"github.com/UN0wen/pricewatch-vn/server/utils"
+	"github.com/asaskevich/govalidator"
+	"github.com/georgysavva/scany/pgxscan"
 	"github.com/google/uuid"
 	"github.com/mitchellh/mapstructure"
 	"github.com/pkg/errors"
@@ -24,10 +28,10 @@ type SubscriptionTable struct {
 
 // Subscription represents a single row in the UserItemTable
 type Subscription struct {
-	UserID      uuid.UUID `valid:"required" json:"userid"`
-	ItemID      uuid.UUID `valid:"required" json:"itemid"`
+	UserID      uuid.UUID `valid:"required" json:"user_id" db:"user_id"`
+	ItemID      uuid.UUID `valid:"required" json:"item_id" db:"json_id"`
 	Email       string    `valid:"required" json:"email"`
-	TargetPrice int64     `valid:"required" json:"targetprice"`
+	TargetPrice int64     `valid:"required" json:"target_price" db:"target_price"`
 }
 
 // SubscriptionQuery represents all of the rows the item can be queried over
@@ -36,55 +40,65 @@ type SubscriptionQuery struct {
 	ItemID uuid.UUID
 }
 
-// NewSubscriptionTable creates a new table in the database for items.
-// It takes a reference to an open db connection and returns the constructed table
-func NewSubscriptionTable(db *db.Db) (subscriptionTable SubscriptionTable, err error) {
-	// Ensure connection is alive
-	if db == nil {
-		err = errors.New("Invalid database connection")
+// GetByUser gets all items followed by user with userID
+func (table *SubscriptionTable) GetByUser(userID uuid.UUID) (subscriptions []Subscription, err error) {
+	var query string
+	var values []interface{}
+
+	query = fmt.Sprintf(`SELECT * FROM %s WHERE user_id=$1;`, SubscriptionTableName)
+
+	values = append(values, userID)
+	utils.Sugar.Infof("SQL Query: %s", query)
+	utils.Sugar.Infof("Values: %s", values)
+
+	err = pgxscan.Select(context.Background(), table.connection.Pool, &subscriptions, query, values...)
+	if err != nil {
+		err = errors.Wrapf(err, "Get query failed to execute")
 		return
-	}
-	subscriptionTable.connection = db
-	// Construct query
-	query := fmt.Sprintf(`
-	CREATE TABLE IF NOT EXISTS %s (
-			userid uuid NOT NULL REFERENCES %s (id) ON DELETE CASCADE,
-			itemid uuid NOT NULL REFERENCES %s (id) ON DELETE CASCADE,
-			email TEXT NOT NULL, 
-			targetprice INT,
-			PRIMARY KEY (userid, itemid)
-			
-		)`, SubscriptionTableName, UserTableName, ItemTableName)
-	// Create the actual table
-	if err = subscriptionTable.connection.CreateTable(query); err != nil {
-		err = errors.Wrapf(err, "Could not initialize table %s", ItemTableName)
 	}
 	return
 }
 
-// Get gets stuffs
-func (table *SubscriptionTable) Get(subscriptionQuery SubscriptionQuery) (subscriptions []Subscription, err error) {
-	allData, err := table.connection.Get(db.SearchOptions{Query: subscriptionQuery, TableName: SubscriptionTableName, Op: "AND"})
+// GetByItem gets all users who follows an item
+func (table *SubscriptionTable) GetByItem(itemID uuid.UUID) (subscriptions []Subscription, err error) {
+	var query string
+	var values []interface{}
+
+	query = fmt.Sprintf(`SELECT * FROM %s WHERE user_id=$1;`, SubscriptionTableName)
+
+	values = append(values, itemID)
+	utils.Sugar.Infof("SQL Query: %s", query)
+	utils.Sugar.Infof("Values: %s", values)
+
+	err = pgxscan.Select(context.Background(), table.connection.Pool, &subscriptions, query, values...)
 	if err != nil {
+		err = errors.Wrapf(err, "Get query failed to execute")
 		return
-	}
-	for _, data := range allData {
-		subscription := Subscription{}
-		err = mapstructure.Decode(data, &subscription)
-		if err != nil {
-			return
-		}
-		subscriptions = append(subscriptions, subscription)
 	}
 	return
 }
 
 // Insert adds a new item into the table.
-func (table *SubscriptionTable) Insert(subscription Subscription) (err error) {
-	err = table.connection.Insert(SubscriptionTableName, subscription)
+func (table *SubscriptionTable) Insert(subscription Subscription) (returnedSubscription Subscription, err error) {
+	var query string
+	var values []interface{}
+	_, err = govalidator.ValidateStruct(subscription)
 	if err != nil {
-		err = errors.Wrapf(err, "Insertion query failed for new subscription: %s", subscription)
+		err = errors.Wrap(err, "Missing fields in Subscription")
+		return
 	}
+	values = append(values, subscription.UserID, subscription.ItemID, subscription.Email, subscription.TargetPrice)
+	query = fmt.Sprintf(`INSERT INTO "%s" (user_id, item_id, email, target_price) VALUES ($1, $2, $3, $4) RETURNING *;`, UserTableName)
+
+	utils.Sugar.Infof("SQL Query: %s", query)
+	utils.Sugar.Infof("Values: %s", values)
+
+	returnedSubscription = Subscription{}
+	err = pgxscan.Get(context.Background(), table.connection.Pool, &returnedSubscription, query, values...)
+	if err != nil {
+		err = errors.Wrapf(err, "Insertion query failed to execute")
+	}
+
 	return
 }
 

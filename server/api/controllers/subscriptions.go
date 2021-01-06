@@ -37,7 +37,7 @@ func Subscribe(w http.ResponseWriter, r *http.Request) {
 		TargetPrice: inSub.TargetPrice,
 	}
 
-	err = models.LayerInstance().Subscription.Insert(sub)
+	_, err = models.LayerInstance().Subscription.Insert(sub)
 	if err != nil {
 		render.Render(w, r, payloads.ErrInvalidRequest(err))
 		return

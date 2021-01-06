@@ -38,27 +38,15 @@ func LayerInstance() *layer {
 			Database: utils.DBName,
 		})
 		utils.CheckError(err)
-		// Create all the tables
-		userTable, err := NewUserTable(&db)
-		utils.CheckError(err)
-		itemTable, err := NewItemTable(&db)
-		utils.CheckError(err)
-		itemPriceTable, err := NewItemPriceTable(&db)
-		utils.CheckError(err)
-		userItemTable, err := NewUserItemTable(&db)
-		utils.CheckError(err)
-		sessionTable, err := NewSessionTable(&db)
-		utils.CheckError(err)
-		subscriptionTable, err := NewSubscriptionTable(&db)
-		utils.CheckError(err)
+
 		// Create the layer only once
 		instance = &layer{
-			User:         &userTable,
-			Item:         &itemTable,
-			UserItem:     &userItemTable,
-			ItemPrice:    &itemPriceTable,
-			Session:      &sessionTable,
-			Subscription: &subscriptionTable,
+			User:         &UserTable{connection: &db},
+			Item:         &ItemTable{connection: &db},
+			UserItem:     &UserItemTable{connection: &db},
+			ItemPrice:    &ItemPriceTable{connection: &db},
+			Session:      &SessionTable{connection: &db},
+			Subscription: &SubscriptionTable{connection: &db},
 		}
 	})
 	return instance

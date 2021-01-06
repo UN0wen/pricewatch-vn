@@ -5,7 +5,7 @@ import Fade from '@material-ui/core/Fade'
 import { useHistory } from 'react-router-dom'
 import Routes from '../../utils/routes'
 import { Dialog, LinearProgress } from '@material-ui/core'
-import { logout } from '../../contexts/actions'
+import { logout } from '../../api/user'
 import { useAuthDispatch } from '../../contexts/context'
 
 const useStyles = makeStyles((theme: Theme) =>

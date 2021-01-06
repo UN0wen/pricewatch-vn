@@ -10,7 +10,7 @@ import {
 } from '@material-ui/core'
 import { useForm } from 'react-hook-form'
 import { useAuthDispatch, useAuthState } from '../../../contexts/context'
-import { updateUsername } from '../../../contexts/actions'
+import { updateUsername } from '../../../api/user'
 
 const useStyles = makeStyles((theme) => ({
   paper: {

@@ -5,7 +5,6 @@ import (
 
 	"github.com/jackc/pgx/v4"
 	"github.com/pkg/errors"
-	"golang.org/x/crypto/bcrypt"
 )
 
 func mapRows(rows pgx.Rows) (objects []map[string]interface{}, err error) {
@@ -29,15 +28,5 @@ func mapRows(rows pgx.Rows) (objects []map[string]interface{}, err error) {
 		objects = append(objects, m)
 	}
 
-	return
-}
-
-// Hashes a password string
-func hashPassword(pass string) (hash []byte, err error) {
-	hash, err = bcrypt.GenerateFromPassword([]byte(pass), bcrypt.DefaultCost)
-	if err != nil {
-		err = errors.Wrapf(err, "Password hash failed")
-		return
-	}
 	return
 }

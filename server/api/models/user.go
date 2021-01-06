@@ -1,11 +1,14 @@
 package models
 
 import (
+	"context"
 	"fmt"
 	"time"
 
 	"github.com/UN0wen/pricewatch-vn/server/db"
+	"github.com/UN0wen/pricewatch-vn/server/utils"
 	"github.com/asaskevich/govalidator"
+	"github.com/georgysavva/scany/pgxscan"
 	"github.com/google/uuid"
 	"github.com/mitchellh/mapstructure"
 	"github.com/pkg/errors"
@@ -24,46 +27,12 @@ type UserTable struct {
 
 // User represents a single row in the UserTable
 type User struct {
-	ID           uuid.UUID `valid:"required" json:"id"`
-	Username     string    `valid:"required" json:"username"`
-	Email        string    `valid:"required" json:"email"`
-	Password     string    `valid:"required" json:"password"`
-	TimeCreated  time.Time `valid:"-" json:"time_created,omitempty"`
-	TimeLoggedIn time.Time `valid:"-" json:"time_logged_in,omitempty"`
-}
-
-// UserQuery represents all of the rows the user can be queried over
-type UserQuery struct {
-	ID           uuid.UUID
-	Email        string
-	TimeLoggedIn time.Time
-}
-
-// NewUserTable creates a new table in the database for users.
-// It takes a reference to an open db connection and returns the constructed table
-func NewUserTable(db *db.Db) (userTable UserTable, err error) {
-	// Ensure connection is alive
-	if db == nil {
-		err = errors.New("Invalid database connection")
-		return
-	}
-	userTable.connection = db
-	// Construct query
-	query := fmt.Sprintf(`
-	CREATE TABLE IF NOT EXISTS %s (
-			id uuid NOT NULL, 
-			username TEXT NOT NULL,
-			email TEXT NOT NULL UNIQUE, 
-			password TEXT NOT NULL,
-			timeCreated TIMESTAMPTZ NOT NULL DEFAULT now(), 
-			timeLoggedIn TIMESTAMPTZ NOT NULL DEFAULT now(), 
-			PRIMARY KEY (id)
-		)`, UserTableName)
-	// Create the actual table
-	if err = userTable.connection.CreateTable(query); err != nil {
-		err = errors.Wrapf(err, "Could not initialize table %s", UserTableName)
-	}
-	return
+	ID       uuid.UUID `valid:"-" json:"id"`
+	Username string    `valid:"required" json:"username"`
+	Email    string    `valid:"required" json:"email"`
+	Password string    `valid:"required" json:"password"`
+	Created  time.Time `valid:"-" json:"created" db:"created"`
+	LoggedIn time.Time `valid:"-" json:"logged_in" db:"logged_in"`
 }
 
 // Login accepts a user object and checks that the user's email is in the database
@@ -76,20 +45,14 @@ func (table *UserTable) Login(user User) (found User, err error) {
 		err = errors.New("Password can't be blank")
 		return
 	}
-	query := UserQuery{Email: user.Email}
 
-	data, err := table.connection.Get(db.SearchOptions{Query: query, TableName: UserTableName})
+	found, err = table.GetByEmail(user.Email)
 
 	if err != nil {
 		err = errors.Wrapf(err, "Error querying user with email %s", user.Email)
 		return
-	} else if data == nil {
+	} else if found == (User{}) {
 		err = errors.New("No user with this email address can be found")
-		return
-	}
-
-	err = mapstructure.Decode(data[0], &found)
-	if err != nil {
 		return
 	}
 
@@ -104,7 +67,7 @@ func (table *UserTable) Login(user User) (found User, err error) {
 
 	timeNow := time.Now()
 
-	updated, err := table.connection.Update(found.ID, UserTableName, UserQuery{TimeLoggedIn: timeNow})
+	updated, err := table.connection.Update(found.ID, UserTableName, User{LoggedIn: timeNow})
 	if err != nil {
 		err = errors.Wrapf(err, "Error while updating time logged in")
 		return
@@ -114,44 +77,73 @@ func (table *UserTable) Login(user User) (found User, err error) {
 	return
 }
 
-// Get gets stuffs
-func (table *UserTable) Get(userQuery UserQuery) (users []User, err error) {
-	allData, err := table.connection.Get(db.SearchOptions{Query: userQuery, TableName: UserTableName})
+// GetByEmail gets an user by email
+func (table *UserTable) GetByEmail(email string) (user User, err error) {
+	var query string
+	var values []interface{}
+	query = fmt.Sprintf(`SELECT * FROM %s WHERE email=$1;`, UserTableName)
+
+	values = append(values, email)
+	utils.Sugar.Infof("SQL Query: %s", query)
+	utils.Sugar.Infof("Values: %s", values)
+
+	user = User{}
+	err = pgxscan.Get(context.Background(), table.connection.Pool, &user, query, values...)
 	if err != nil {
+		err = errors.Wrapf(err, "Get query failed to execute")
 		return
 	}
-	for _, data := range allData {
-		user := User{}
-		err = mapstructure.Decode(data, &user)
-		if err != nil {
-			return
-		}
-		users = append(users, user)
-	}
+
 	return
 }
 
 // GetByID finds a user with id
 func (table *UserTable) GetByID(id uuid.UUID) (user User, err error) {
-	data, err := table.connection.GetByID(id, UserTableName)
+	var query string
+	var values []interface{}
+	query = fmt.Sprintf(`SELECT * FROM %s WHERE id=$1;`, UserTableName)
+
+	values = append(values, id)
+	utils.Sugar.Infof("SQL Query: %s", query)
+	utils.Sugar.Infof("Values: %s", values)
+
+	user = User{}
+	err = pgxscan.Get(context.Background(), table.connection.Pool, &user, query, values...)
 	if err != nil {
+		err = errors.Wrapf(err, "Get query failed to execute")
 		return
 	}
-	err = mapstructure.Decode(data, &user)
-	if err != nil {
-		err = errors.Wrapf(err, "Get query failed for user with id: %s", id)
-	}
+
 	return
 }
 
 // Insert adds a new user into the table.
-func (table *UserTable) Insert(user User) (userID uuid.UUID, err error) {
-	userID, _ = uuid.NewUUID()
-	user.ID = userID
-	err = table.connection.Insert(UserTableName, user)
+func (table *UserTable) Insert(user User) (returnedUser User, err error) {
+	var query string
+	var values []interface{}
+	_, err = govalidator.ValidateStruct(user)
 	if err != nil {
-		err = errors.Wrapf(err, "Insertion query failed for new user: %s", user)
+		err = errors.Wrap(err, "Missing fields in User")
+		return
 	}
+
+	hash, e := utils.HashPassword(user.Password)
+	if e != nil {
+		err = errors.Wrapf(e, "Password hash failed")
+		return
+	}
+	values = append(values, user.Email, user.Username, hash)
+	query = fmt.Sprintf(`INSERT INTO "%s" (email, username, password) VALUES ($1, $2, $3) RETURNING *;`, UserTableName)
+
+	utils.Sugar.Infof("SQL Query: %s", query)
+	utils.Sugar.Infof("Values: %s", values)
+
+	returnedUser = User{}
+	err = pgxscan.Get(context.Background(), table.connection.Pool, &returnedUser, query, values...)
+	if err != nil {
+		err = errors.Wrapf(err, "Insertion query failed to execute")
+	}
+
 	return
 }
 
