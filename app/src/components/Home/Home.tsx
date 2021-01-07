@@ -1,10 +1,11 @@
-import { CircularProgress, Grid, makeStyles, Theme } from '@material-ui/core'
+import { CircularProgress, Grid,  Theme } from '@material-ui/core'
 import React, { useEffect, useState } from 'react'
 import { getAllItems } from '../../api/item'
 import { ItemWithPrice } from '../../api/models'
 import ItemCard from '../ItemCard'
+import { makeStyles,  createStyles} from '@material-ui/core/styles'
 
-const useStyles = makeStyles((theme: Theme) => ({
+const useStyles = makeStyles((theme: Theme) => createStyles({
   grow: {
     flexGrow: 1,
   },

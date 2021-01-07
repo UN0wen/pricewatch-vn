@@ -1,9 +1,5 @@
 import React from 'react'
 import { Theme, createStyles, makeStyles } from '@material-ui/core/styles'
-import Card from '@material-ui/core/Card'
-import CardContent from '@material-ui/core/CardContent'
-import CardMedia from '@material-ui/core/CardMedia'
-import Typography from '@material-ui/core/Typography'
 import empty from './assets/empty.jpg'
 import {
   Button,
@@ -11,7 +7,11 @@ import {
   CardActions,
   CardHeader,
   Divider,
-} from '@material-ui/core'
+  Card,
+  CardContent,
+  CardMedia,
+  Typography,
+} from '@material-ui/core';
 import { useHistory } from 'react-router-dom'
 import { formatDistanceToNow, parseISO } from 'date-fns'
 
@@ -21,7 +21,7 @@ const useStyles = makeStyles((theme: Theme) =>
       display: 'flex',
       flexDirection: 'column',
       margin: theme.spacing(1),
-      flexGrow: 1,
+      flexGrow: 1, 
       maxWidth: 400,
     },
     content: {

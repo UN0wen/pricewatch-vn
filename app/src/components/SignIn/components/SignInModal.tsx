@@ -1,8 +1,9 @@
-import { Backdrop, createStyles, Dialog, Fade, LinearProgress, makeStyles, Theme } from "@material-ui/core"
+import { Backdrop,Dialog, Fade, LinearProgress,Theme } from "@material-ui/core"
 import React, { useEffect } from "react"
 import { useState } from "react"
 import { useHistory } from "react-router-dom"
 import Routes from "../../../utils/routes"
+import { makeStyles,  createStyles} from '@material-ui/core/styles'
 
 const useStyles = makeStyles((theme: Theme) =>
   createStyles({

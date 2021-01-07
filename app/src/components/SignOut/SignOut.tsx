@@ -1,10 +1,8 @@
 import React, { useState } from 'react'
 import { makeStyles, Theme, createStyles } from '@material-ui/core/styles'
-import Backdrop from '@material-ui/core/Backdrop'
-import Fade from '@material-ui/core/Fade'
 import { useHistory } from 'react-router-dom'
 import Routes from '../../utils/routes'
-import { Dialog, LinearProgress } from '@material-ui/core'
+import { Dialog, LinearProgress, Backdrop, Fade } from '@material-ui/core';
 import { logout } from '../../api/user'
 import { useAuthDispatch } from '../../contexts/context'
 

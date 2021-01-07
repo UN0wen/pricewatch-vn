@@ -2,7 +2,6 @@ import {
   CircularProgress,
   Divider,
   Grid,
-  makeStyles,
   Theme,
   Typography,
 } from '@material-ui/core'
@@ -14,8 +13,9 @@ import { useAuthState } from '../../contexts/context'
 import Routes from '../../utils/routes'
 import ItemCard from '../ItemCard'
 import Account from './components/Account'
+import { makeStyles,  createStyles} from '@material-ui/core/styles'
 
-const useStyles = makeStyles((theme: Theme) => ({
+const useStyles = makeStyles((theme: Theme) => createStyles({
   grow: {
     flexGrow: 1,
     height: '100%',

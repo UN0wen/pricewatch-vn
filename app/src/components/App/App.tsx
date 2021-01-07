@@ -13,7 +13,8 @@ import { AxiosInstance } from '../../api/axios'
 import { useAuthDispatch } from '../../contexts/context'
 import { logout } from '../../api/user'
 import { CookieWrapper } from '../../utils/storage'
-import { CssBaseline, ThemeProvider, useMediaQuery } from '@material-ui/core'
+import { CssBaseline, useMediaQuery } from '@material-ui/core'
+import { ThemeProvider} from '@material-ui/core/styles'
 import { darkTheme, lightTheme } from '../../theme'
 
 function App() {

@@ -1,8 +1,6 @@
 import {
   Button,
-  createStyles,
   Grid,
-  makeStyles,
   Theme,
   Typography,
 } from '@material-ui/core'
@@ -11,6 +9,7 @@ import React, { useState } from 'react'
 import { useAuthState } from '../../../contexts/context'
 import EditPasswordForm from './EditPasswordForm'
 import EditAccountForm from './EditAccountForm'
+import { makeStyles,  createStyles} from '@material-ui/core/styles'
 
 const useStyles = makeStyles((theme: Theme) =>
   createStyles({
