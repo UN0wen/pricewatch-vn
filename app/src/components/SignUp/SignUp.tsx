@@ -73,7 +73,7 @@ export default function SignUp() {
 
       console.log(data)
       const response = await createUser(dispatch, { user })
-      if (!response.user) return // TODO: error handling
+      if (!response) return // TODO: error handling
       setOpen(!open)
     } catch (error) {
       setError("email", {

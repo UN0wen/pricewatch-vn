@@ -37,6 +37,30 @@ func GetItem(w http.ResponseWriter, r *http.Request) {
 	}
 }
 
+// GetItemWithPrice returns a specific Item with its latest price.
+func GetItemWithPrice(w http.ResponseWriter, r *http.Request) {
+	var err error
+	itemIDParam := chi.URLParam(r, "itemID")
+	itemID, err := uuid.Parse(itemIDParam)
+
+	if err != nil {
+		render.Render(w, r, payloads.ErrNotFound)
+		return
+	}
+
+	itemWithPrice, err := models.LayerInstance().Item.GetWithPrice(itemID)
+
+	if err != nil {
+		render.Render(w, r, payloads.ErrNotFound)
+		return
+	}
+
+	if err := render.Render(w, r, payloads.NewItemWithPriceResponse(&itemWithPrice)); err != nil {
+		render.Render(w, r, payloads.ErrRender(err))
+		return
+	}
+}
+
 // GetItems returns all items.
 func GetItems(w http.ResponseWriter, r *http.Request) {
 	items, err := models.LayerInstance().Item.GetAll()
@@ -47,6 +71,21 @@ func GetItems(w http.ResponseWriter, r *http.Request) {
 	}
 
 	if err := render.RenderList(w, r, payloads.NewItemListResponse(items)); err != nil {
+		render.Render(w, r, payloads.ErrRender(err))
+		return
+	}
+}
+
+// GetItemsWithPrice returns all items with prices.
+func GetItemsWithPrice(w http.ResponseWriter, r *http.Request) {
+	items, err := models.LayerInstance().Item.GetAllWithPrice()
+
+	if err != nil {
+		render.Render(w, r, payloads.ErrInternalError(err))
+		return
+	}
+
+	if err := render.RenderList(w, r, payloads.NewItemWithPriceListResponse(items)); err != nil {
 		render.Render(w, r, payloads.ErrRender(err))
 		return
 	}
@@ -100,4 +139,29 @@ func CreateItem(w http.ResponseWriter, r *http.Request) {
 		render.Render(w, r, payloads.ErrRender(err))
 		return
 	}
+}
+
+// ValidateURL checks if an URL is supported
+func ValidateURL(w http.ResponseWriter, r *http.Request) {
+	data := &payloads.ItemRequest{}
+	if err := render.Bind(r, data); err != nil {
+		render.Render(w, r, payloads.ErrInvalidRequest(err))
+		return
+	}
+	item := data.Item
+
+	path, err := url.Parse(item.URL)
+	if err != nil {
+		render.Render(w, r, payloads.ErrInvalidRequest(err))
+		return
+	}
+
+	// Check if corresponding scraper exists
+	if _, ok := scraper.Instance().Scrapers[path.Host]; ok {
+		render.Status(r, http.StatusOK)
+	} else {
+		render.Render(w, r, payloads.ErrNotImplemented)
+		return
+	}
+
 }

@@ -1,4 +1,5 @@
 import React from 'react'
+import { User } from '../api/models'
 import { AuthDispatch, AuthReducer, initialState } from './reducer'
 
 const anything = {} as any
@@ -9,7 +10,7 @@ const AuthDispatchContext = React.createContext<React.Dispatch<AuthDispatch>>(
 
 // interface for userauth objects stored in cookies
 export interface UserAuth {
-  user: any
+  user: User
   token: string
   loading: boolean
   errorMessage: any

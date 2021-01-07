@@ -29,7 +29,7 @@ type UserTable struct {
 type User struct {
 	ID       uuid.UUID `valid:"-" json:"id"`
 	Username string    `valid:"required" json:"username"`
-	Email    string    `valid:"required" json:"email"`
+	Email    string    `valid:"required,email" json:"email"`
 	Password string    `valid:"required" json:"password"`
 	Created  time.Time `valid:"-" json:"created" db:"created"`
 	LoggedIn time.Time `valid:"-" json:"logged_in" db:"logged_in"`

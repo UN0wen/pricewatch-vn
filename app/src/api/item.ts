@@ -1,40 +1,103 @@
-import { AxiosInstance } from '../utils/axios'
-import { CookieWrapper } from '../utils/storage'
+import { AxiosInstance } from './axios'
+import { Item, ItemPrice, ItemWithPrice } from './models'
 
-type CreateUserPayload = {
-  user: {
-    username: string
-    email: string
-    password: string
+type CreateItemPayload = {
+  item: {
+    url: string
   }
 }
 
-export async function getAllItems(
-  createUserPayload: CreateUserPayload
-) {
+// Returns an array of items with prices
+export async function getAllItems() {
+  try {
+    const response = await AxiosInstance.get('/items/prices')
+    const data = response.data
+    if (Array.isArray(data)) {
+      const items = data.map(d => <ItemWithPrice>d.item_with_price)
+      return items
+    }
+    return null
+  } catch (err) {
+    console.log(err.response.data.error)
+    return null
+  }
+}
+
+// Returns an item
+export async function getItem(id: string) {
+  try {
+    const response = await AxiosInstance.get(`/item/${id}`)
+    const data = response.data
+    if (data.item) {
+      return <Item>data.item
+    }
+    return null
+  } catch (err) {
+    console.log(err.response.data.error)
+    return null
+  }
+}
+
+// Returns an item's latest price
+export async function getItemPrice(id: string) {
+  try {
+    const response = await AxiosInstance.get(`/item/${id}/price`)
+    const data = response.data
+    if (data.item) {
+      return <ItemPrice>data.item
+    }
+    return null
+  } catch (err) {
+    console.log(err.response.data.error)
+    return null
+  }
+}
+
+// Returns all item's prices
+export async function getItemPrices(id: string) {
+  try {
+    const response = await AxiosInstance.get(`/item/${id}/prices`)
+    const data = response.data
+    if (Array.isArray(data)) {
+      const itemPrices = data.map(d => <ItemPrice>d.item)
+      return itemPrices
+    }
+    return null 
+  } catch (err) {
+    console.log(err.response.data.error)
+    return null
+  }
+}
+
+export async function createItem(payload: CreateItemPayload) {
   const requestOptions = {
     headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify(createUserPayload),
+    body: JSON.stringify(payload),
   }
   try {
-    const response = await AxiosInstance.post(
-      `/signup`,
-      createUserPayload,
-      requestOptions
-    )
+    const response = await AxiosInstance.post(`/item`, payload, requestOptions)
     const data = response.data
-    if (data.user) {
-      let expires = new Date()
-      expires = new Date(expires.getTime() + 1000 * 60 * 60 * 24 * 7)
-      CookieWrapper.setCookie('userAuth', data.user, expires)
-      CookieWrapper.setCookie('jwt', data.jwt, expires)
-      // setup axios to use auth from now
-      AxiosInstance.defaults.headers.common['Authorization'] =
-        'Bearer ' + data.jwt
-      return data
+    if (data) {
+      return <Item>data.item
     }
-    return
-  } catch (error) {
-    console.log(error.data.message)
+    return null
+  } catch (err) {
+    console.log(err.response.data.error)
+    return null
+  }
+}
+
+export async function checkURL(payload: CreateItemPayload) : Promise<boolean> {
+  const requestOptions = {
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(payload),
+  }
+  try {
+    await AxiosInstance.post(`/item`, payload, requestOptions)
+    
+    return true
+  } catch (err) {
+    console.log(err.response.data.error)
+    return false
   }
 }

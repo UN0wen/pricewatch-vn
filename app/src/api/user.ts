@@ -1,6 +1,7 @@
 import { AuthDispatch, AuthReducerActions } from '../contexts/reducer'
 import { CookieWrapper } from '../utils/storage'
-import { AxiosInstance } from '../utils/axios'
+import { AxiosInstance } from './axios'
+import { User } from './models'
 
 type LoginPayload = {
   user: {
@@ -50,7 +51,7 @@ export async function createUser(
       // setup axios to use auth from now
       AxiosInstance.defaults.headers.common['Authorization'] =
         'Bearer ' + data.jwt
-      return data
+      return <User>data.user
     }
 
     dispatch({
@@ -58,13 +59,15 @@ export async function createUser(
       payload: {} as any,
       error: data.errors[0],
     })
-    return
+    return null
   } catch (error) {
     dispatch({
       type: AuthReducerActions.LOGIN_ERROR,
       payload: {} as any,
       error: error,
     })
+
+    return null
   }
 }
 
@@ -103,7 +106,7 @@ export async function loginUser(
       // setup axios to use auth from now
       AxiosInstance.defaults.headers.common['Authorization'] =
         'Bearer ' + data.jwt
-      return data
+      return <User>data.user
     }
 
     dispatch({
@@ -111,13 +114,15 @@ export async function loginUser(
       payload: {} as any,
       error: data.errors[0],
     })
-    return
+    return null
   } catch (error) {
     dispatch({
       type: AuthReducerActions.LOGIN_ERROR,
       payload: {} as any,
       error: error,
     })
+
+    return null
   }
 }
 
@@ -180,13 +185,14 @@ export async function updatePassword(
         let expires = new Date()
         expires = new Date(expires.getTime() + 1000 * 60 * 60 * 24 * 7)
         CookieWrapper.setCookie("userAuth", data.user, expires)
-        return data
+        return <User>data.user
       }
     }
 
-    return
+    return null
   } catch (error) {
-    console.log(error)
+    console.log(error.response.data.error)
+    return null
   }
 }
 
@@ -216,11 +222,13 @@ export async function updateUsername(
       expires = new Date(expires.getTime() + 1000 * 60 * 60 * 24 * 7)
       CookieWrapper.setCookie("userAuth", data.user, expires)
 
-      return data
+      return <User>data.user
     }
 
-    return
+    return null
   } catch (error) {
-    console.log(error)
+    console.log(error.response.data.error)
+    return null
+
   }
 }

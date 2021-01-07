@@ -66,7 +66,7 @@ export default function EditAccountForm({callback}) {
 
       console.log(data)
       const response = await updateUsername(dispatch, { user })
-      if (!response.user) return // TODO: error handling
+      if (!response) return // TODO: error handling
     } catch (error) {
       console.log(error)
     }

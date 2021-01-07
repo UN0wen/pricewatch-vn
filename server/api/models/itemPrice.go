@@ -25,7 +25,7 @@ type ItemPriceTable struct {
 
 // ItemPrice represents a single row in the ItemPriceTable
 type ItemPrice struct {
-	ItemID    uuid.UUID `valid:"required" json:"item_id" db:"item_id"`
+	ItemID    uuid.UUID `valid:"-" json:"item_id" db:"item_id"`
 	Time      time.Time `valid:"-" json:"time"`
 	Price     int64     `valid:"required" json:"price"`
 	Available bool      `valid:"required" json:"available"`
@@ -84,6 +84,11 @@ func (table *ItemPriceTable) Insert(itemPrice ItemPrice) (returnedItemPrice Item
 	_, err = govalidator.ValidateStruct(itemPrice)
 	if err != nil {
 		err = errors.Wrap(err, "Missing fields in ItemPrice")
+		return
+	}
+
+	if itemPrice.ItemID == uuid.Nil {
+		err = errors.Wrap(err, "Missing ItemID in ItemPrice")
 		return
 	}
 

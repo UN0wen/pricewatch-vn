@@ -21,19 +21,23 @@ func createUserRoutes(r *chi.Mux) {
 		r.With(middleware.Authenticate).With(controllers.SessionCtx).Delete("/", controllers.DeleteUser) // Delete
 
 		// UserItems
-		// r.With(middleware.Authenticate).With(controllers.SessionCtx).Get("/item/{itemID}", controllers.GetUserItem) //
-		r.With(middleware.Authenticate).With(controllers.SessionCtx).Get("/items", controllers.GetUserItems)   //
-		r.With(middleware.Authenticate).With(controllers.SessionCtx).Post("/item", controllers.CreateUserItem) //
+		r.With(middleware.Authenticate).With(controllers.SessionCtx).Get("/item/{itemID}", controllers.GetUserItem) //
+		r.With(middleware.Authenticate).With(controllers.SessionCtx).Get("/items", controllers.GetUserItems)        //
+		r.With(middleware.Authenticate).With(controllers.SessionCtx).Post("/item", controllers.CreateUserItem)      //
 	})
 }
 
 func createItemRoutes(r *chi.Mux) {
-	r.Get("/api/items", controllers.GetItems)
+	r.Route("/api/items", func(r chi.Router) {
+		r.Get("/", controllers.GetItems)
+		r.Get("/prices", controllers.GetItemsWithPrice)
+	})
 	r.Route("/api/item", func(r chi.Router) {
 		r.With(middleware.Authenticate).With(controllers.SessionCtx).Post("/", controllers.CreateItem) // Create
 		r.Get("/{itemID}", controllers.GetItem)                                                        // Get /users
 		r.Get("/{itemID}/price", controllers.GetPrice)
 		r.Get("/{itemID}/prices", controllers.GetPrices)
+		r.Post("/validate", controllers.ValidateURL)
 	})
 }
 

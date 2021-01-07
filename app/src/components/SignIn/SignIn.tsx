@@ -56,7 +56,7 @@ export default function SignIn() {
         password,
       }
       const response = await loginUser(dispatch, { user })
-      if (!response.user) return // TODO: error handling
+      if (!response) return // TODO: error handling
       setOpen(true)
     } catch (error) {
       setError('email', {

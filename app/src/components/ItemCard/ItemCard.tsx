@@ -13,6 +13,7 @@ import {
   Divider,
 } from '@material-ui/core'
 import { useHistory } from 'react-router-dom'
+import { formatDistanceToNow, parseISO } from 'date-fns'
 
 const useStyles = makeStyles((theme: Theme) =>
   createStyles({
@@ -21,7 +22,7 @@ const useStyles = makeStyles((theme: Theme) =>
       flexDirection: 'column',
       margin: theme.spacing(1),
       flexGrow: 1,
-      maxWidth: 345,
+      maxWidth: 400,
     },
     content: {
       display: 'flex',
@@ -58,11 +59,11 @@ export default function ItemCard(props) {
   const classes = useStyles()
   const history = useHistory()
 
-  const title = props.title || 'No title'
+  const title = props.name || 'No title'
   const imgURL = props.image_url || empty
   const url = props.url || '/'
   const id = props.id || ''
-  const updated = props.updated || 'Unknown'
+  const updated = parseISO(props.time) || 'Unknown'
   const price: number = props.price || 0
   const onClickStore = () => {
     window.location = url
@@ -75,7 +76,7 @@ export default function ItemCard(props) {
   return (
     <Card className={classes.root}>
       <CardActionArea onClick={onClickItem}>
-        <CardHeader title={title} subheader={`Last updated: ${updated}`} />
+        <CardHeader title={title} subheader={`Last updated: ${formatDistanceToNow(updated,{addSuffix: true})}`} />
         <CardMedia className={classes.cover} image={imgURL} title={title} />
 
         <div>

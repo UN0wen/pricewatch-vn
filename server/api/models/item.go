@@ -17,7 +17,8 @@ import (
 // ItemTableName is the name of the item table in the db
 // ItemLatestView is the name of the item + price view
 const (
-	ItemTableName = "items"
+	ItemTableName  = "items"
+	ItemLatestView = "items_with_price"
 )
 
 // ItemTable represents the connection to the db instance
@@ -33,6 +34,12 @@ type Item struct {
 	ImageURL    string    `valid:"required" json:"image_url" db:"image_url"`
 	URL         string    `valid:"required" json:"url"`
 	Currency    string    `valid:"required" json:"currency"`
+}
+
+// ItemWithPrices represent the join between Item and ItemPrices
+type ItemWithPrice struct {
+	*ItemPrice
+	*Item
 }
 
 // ItemQuery represents all of the rows the item can be queried over
@@ -67,6 +74,42 @@ func (table *ItemTable) GetByID(id uuid.UUID) (item Item, err error) {
 	utils.Sugar.Infof("SQL Query: %s", query)
 	utils.Sugar.Infof("Values: %s", values)
 
+	err = pgxscan.Get(context.Background(), table.connection.Pool, &item, query, values...)
+	if err != nil {
+		err = errors.Wrapf(err, "Get query failed to execute")
+		return
+	}
+
+	return
+}
+
+// GetAllWithPrice gets all items with price from the table
+func (table *ItemTable) GetAllWithPrice() (items []ItemWithPrice, err error) {
+	var query string
+
+	query = fmt.Sprintf(`SELECT * FROM %s;`, ItemLatestView)
+
+	utils.Sugar.Infof("SQL Query: %s", query)
+
+	err = pgxscan.Select(context.Background(), table.connection.Pool, &items, query)
+	if err != nil {
+		err = errors.Wrapf(err, "Get query failed to execute")
+		return
+	}
+	return
+}
+
+// GetWithPrice finds an item by id with price
+func (table *ItemTable) GetWithPrice(id uuid.UUID) (item ItemWithPrice, err error) {
+	var query string
+	var values []interface{}
+	query = fmt.Sprintf(`SELECT * FROM %s WHERE ID = $1;`, ItemLatestView)
+
+	values = append(values, id)
+	utils.Sugar.Infof("SQL Query: %s", query)
+	utils.Sugar.Infof("Values: %s", values)
+
+	item = ItemWithPrice{}
 	err = pgxscan.Get(context.Background(), table.connection.Pool, &item, query, values...)
 	if err != nil {
 		err = errors.Wrapf(err, "Get query failed to execute")

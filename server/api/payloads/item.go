@@ -48,3 +48,31 @@ func (rd *ItemResponse) Render(w http.ResponseWriter, r *http.Request) error {
 	// Pre-processing before a response is marshalled and sent across the wire
 	return nil
 }
+
+// ItemWithPriceResponse is the response payload for the ItemWithPrice data model.
+type ItemWithPriceResponse struct {
+	ItemWithPrice *models.ItemWithPrice `json:"item_with_price"`
+}
+
+// NewItemWithPriceResponse generate a Response for ItemWithPrice object
+func NewItemWithPriceResponse(item *models.ItemWithPrice) *ItemWithPriceResponse {
+	resp := &ItemWithPriceResponse{ItemWithPrice: item}
+
+	return resp
+}
+
+// NewItemWithPriceListResponse generates a list of renders for ItemWithPrices
+func NewItemWithPriceListResponse(items []models.ItemWithPrice) []render.Renderer {
+	list := []render.Renderer{}
+	for i := range items {
+		list = append(list, NewItemWithPriceResponse(&items[i]))
+	}
+
+	return list
+}
+
+// Render is preprocessing before the response is marshalled
+func (rd *ItemWithPriceResponse) Render(w http.ResponseWriter, r *http.Request) error {
+	// Pre-processing before a response is marshalled and sent across the wire
+	return nil
+}

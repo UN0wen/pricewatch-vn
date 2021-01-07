@@ -87,6 +87,12 @@ func (table *SubscriptionTable) Insert(subscription Subscription) (returnedSubsc
 		err = errors.Wrap(err, "Missing fields in Subscription")
 		return
 	}
+
+	if subscription.ItemID == uuid.Nil || subscription.UserID == uuid.Nil {
+		err = errors.Wrap(err, "Missing ItemID/UserID in Subscription")
+		return
+	}
+
 	values = append(values, subscription.UserID, subscription.ItemID, subscription.Email, subscription.TargetPrice)
 	query = fmt.Sprintf(`INSERT INTO "%s" (user_id, item_id, email, target_price) VALUES ($1, $2, $3, $4) RETURNING *;`, UserTableName)
 

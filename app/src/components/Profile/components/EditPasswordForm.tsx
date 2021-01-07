@@ -69,7 +69,7 @@ export default function EditPasswordForm({callback}) {
 
       console.log(data)
       const response = await updatePassword(dispatch, { "user": validate }, {"user": userPayload})
-      if (!response.user) return // TODO: error handling
+      if (!response) return // TODO: error handling
     } catch (error) {
       console.log(error)
     }

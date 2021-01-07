@@ -6,7 +6,6 @@ import (
 
 	"github.com/UN0wen/pricewatch-vn/server/db"
 	"github.com/UN0wen/pricewatch-vn/server/utils"
-	"github.com/asaskevich/govalidator"
 	"github.com/georgysavva/scany/pgxscan"
 	"github.com/google/uuid"
 	"github.com/mitchellh/mapstructure"
@@ -25,8 +24,8 @@ type UserItemTable struct {
 
 // UserItem represents a single row in the UserItemTable
 type UserItem struct {
-	UserID uuid.UUID `valid:"required" json:"user_id" db:"user_id"`
-	ItemID uuid.UUID `valid:"required" json:"item_id" db:"item_id"`
+	UserID uuid.UUID `valid:"-" json:"user_id" db:"user_id"`
+	ItemID uuid.UUID `valid:"-" json:"item_id" db:"item_id"`
 }
 
 // UserItemQuery represents all of the rows the item can be queried over
@@ -36,16 +35,35 @@ type UserItemQuery struct {
 }
 
 // GetByUser gets all items followed by user with userID
-func (table *UserItemTable) GetByUser(userID uuid.UUID) (userItems []UserItem, err error) {
+func (table *UserItemTable) GetByUser(userID uuid.UUID) (items []ItemWithPrice, err error) {
 	var query string
 	var values []interface{}
-	query = fmt.Sprintf(`SELECT * FROM %s WHERE user_id=$1;`, UserItemTableName)
+	query = fmt.Sprintf(`SELECT i.* FROM %s inner join %s i on user_items.item_id = i.id WHERE user_id=$1;`, UserItemTableName, ItemLatestView)
 
 	values = append(values, userID)
 	utils.Sugar.Infof("SQL Query: %s", query)
 	utils.Sugar.Infof("Values: %s", values)
 
-	err = pgxscan.Select(context.Background(), table.connection.Pool, &userItems, query, values...)
+	err = pgxscan.Select(context.Background(), table.connection.Pool, &items, query, values...)
+	if err != nil {
+		err = errors.Wrapf(err, "Get query failed to execute")
+		return
+	}
+	return
+}
+
+// GetByUserItem gets an UserItem by both UserID and ItemID
+func (table *UserItemTable) GetByUserItem(userID uuid.UUID, itemID uuid.UUID) (returnedUserItem UserItem, err error) {
+	var query string
+	var values []interface{}
+	query = fmt.Sprintf(`SELECT * FROM %s WHERE user_id=$1,item_id=$2;`, UserItemTableName)
+
+	values = append(values, userID, itemID)
+	utils.Sugar.Infof("SQL Query: %s", query)
+	utils.Sugar.Infof("Values: %s", values)
+
+	returnedUserItem = UserItem{}
+	err = pgxscan.Get(context.Background(), table.connection.Pool, &returnedUserItem, query, values...)
 	if err != nil {
 		err = errors.Wrapf(err, "Get query failed to execute")
 		return
@@ -57,9 +75,9 @@ func (table *UserItemTable) GetByUser(userID uuid.UUID) (userItems []UserItem, e
 func (table *UserItemTable) Insert(userItem UserItem) (returnedUserItem UserItem, err error) {
 	var query string
 	var values []interface{}
-	_, err = govalidator.ValidateStruct(userItem)
-	if err != nil {
-		err = errors.Wrap(err, "Missing fields in UserItem")
+
+	if userItem.ItemID == uuid.Nil || userItem.UserID == uuid.Nil {
+		err = errors.Wrap(err, "Missing ItemID/UserID in UserItem")
 		return
 	}
 
