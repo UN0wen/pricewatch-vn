@@ -1,6 +1,6 @@
 import React from 'react'
 import { Theme, createStyles, makeStyles } from '@material-ui/core/styles'
-import empty from './assets/empty.jpg'
+import empty from '../../images/empty.jpg'
 import {
   Button,
   CardActionArea,

@@ -36,7 +36,7 @@ type Item struct {
 	Currency    string    `valid:"required" json:"currency"`
 }
 
-// ItemWithPrices represent the join between Item and ItemPrices
+// ItemWithPrice represent the join between Item and ItemPrices
 type ItemWithPrice struct {
 	*ItemPrice
 	*Item
@@ -111,6 +111,26 @@ func (table *ItemTable) GetWithPrice(id uuid.UUID) (item ItemWithPrice, err erro
 
 	item = ItemWithPrice{}
 	err = pgxscan.Get(context.Background(), table.connection.Pool, &item, query, values...)
+	if err != nil {
+		err = errors.Wrapf(err, "Get query failed to execute")
+		return
+	}
+
+	return
+}
+
+// Search searches the item's names for an accent insensitive string
+func (table *ItemTable) Search(searchQuery string) (items []ItemWithPrice, err error) {
+	var query string
+	var values []interface{}
+	query = fmt.Sprintf(`SELECT * FROM %s `, ItemLatestView)
+	query += `WHERE f_lower_unaccent (name) iLIKE ('%' || f_lower_unaccent($1) || '%');`
+
+	values = append(values, searchQuery)
+	utils.Sugar.Infof("SQL Query: %s", query)
+	utils.Sugar.Infof("Values: %s", values)
+
+	err = pgxscan.Select(context.Background(), table.connection.Pool, &items, query, values...)
 	if err != nil {
 		err = errors.Wrapf(err, "Get query failed to execute")
 		return

@@ -23,13 +23,13 @@ export async function getAllItems() {
   }
 }
 
-// Returns an item
+// Returns an item with its price
 export async function getItem(id: string) {
   try {
     const response = await AxiosInstance.get(`/item/${id}`)
     const data = response.data
-    if (data.item) {
-      return <Item>data.item
+    if (data.item_with_price) {
+      return <ItemWithPrice>data.item_with_price
     }
     return null
   } catch (err) {

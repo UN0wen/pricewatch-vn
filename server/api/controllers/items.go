@@ -1,6 +1,7 @@
 package controllers
 
 import (
+	"errors"
 	"net/http"
 	"net/url"
 
@@ -56,6 +57,32 @@ func GetItemWithPrice(w http.ResponseWriter, r *http.Request) {
 	}
 
 	if err := render.Render(w, r, payloads.NewItemWithPriceResponse(&itemWithPrice)); err != nil {
+		render.Render(w, r, payloads.ErrRender(err))
+		return
+	}
+}
+
+// SearchItems returns items with prices matching the search query
+func SearchItems(w http.ResponseWriter, r *http.Request) {
+	var err error
+	searchQuery := r.URL.Query().Get("q")
+
+	if err != nil {
+		render.Render(w, r, payloads.ErrNotFound)
+		return
+	} else if searchQuery == "" {
+		render.Render(w, r, payloads.ErrInvalidRequest(errors.New("Query must exists")))
+		return
+	}
+
+	itemsWithPrice, err := models.LayerInstance().Item.Search(searchQuery)
+
+	if err != nil {
+		render.Render(w, r, payloads.ErrNotFound)
+		return
+	}
+
+	if err := render.RenderList(w, r, payloads.NewItemWithPriceListResponse(itemsWithPrice)); err != nil {
 		render.Render(w, r, payloads.ErrRender(err))
 		return
 	}

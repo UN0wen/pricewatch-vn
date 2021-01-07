@@ -31,10 +31,11 @@ func createItemRoutes(r *chi.Mux) {
 	r.Route("/api/items", func(r chi.Router) {
 		r.Get("/", controllers.GetItems)
 		r.Get("/prices", controllers.GetItemsWithPrice)
+		r.Get("/search", controllers.SearchItems)
 	})
 	r.Route("/api/item", func(r chi.Router) {
 		r.With(middleware.Authenticate).With(controllers.SessionCtx).Post("/", controllers.CreateItem) // Create
-		r.Get("/{itemID}", controllers.GetItem)                                                        // Get /users
+		r.Get("/{itemID}", controllers.GetItemWithPrice)                                               // Get /users
 		r.Get("/{itemID}/price", controllers.GetPrice)
 		r.Get("/{itemID}/prices", controllers.GetPrices)
 		r.Post("/validate", controllers.ValidateURL)

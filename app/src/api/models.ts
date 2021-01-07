@@ -3,8 +3,8 @@ export interface User {
   username: string
   email: string
   password: string
-  created: Date
-  logged_in: Date
+  created: string
+  logged_in: string
 }
 
 export interface Item {
@@ -23,7 +23,7 @@ export interface ItemWithPrice {
   image_url: string
   url: string
   currency: string
-  time: Date
+  time: string
   price: number
   available: boolean
 }
@@ -35,7 +35,7 @@ export interface UserItem {
 
 export interface ItemPrice {
   item_id: string
-  time: Date
+  time: string
   price: number
   available: boolean
 }

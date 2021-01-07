@@ -11,16 +11,18 @@ CREATE INDEX IF NOT EXISTS sessions_expiresafter_idx ON sessions USING btree (ex
 CREATE OR REPLACE VIEW items_with_price AS
 WITH CTE AS (
     SELECT
-        item_id,
-        MAX(time) AS time,
-        price,
-        available
+        *
+    FROM (
+        SELECT
+            item_id,
+            time,
+            price,
+            available,
+            row_number() OVER (PARTITION BY item_id ORDER BY time DESC) AS rn
     FROM
-        item_prices
-    GROUP BY
-        item_id,
-        price,
-        available
+        item_prices) AS t
+    WHERE
+        t.rn = 1
 )
 SELECT
     i.*,
