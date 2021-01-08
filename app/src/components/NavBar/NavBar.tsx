@@ -20,6 +20,7 @@ import { useHistory } from 'react-router-dom'
 import Routes from '../../utils/routes'
 import { useAuthState } from '../../contexts/context'
 import ScrollTop from './components/ScrollTop'
+import { AddCircleOutlined } from '@material-ui/icons'
 
 const useStyles = makeStyles((theme: Theme) =>
   createStyles({
@@ -35,54 +36,21 @@ const useStyles = makeStyles((theme: Theme) =>
         display: 'block',
       },
     },
-    search: {
-      position: 'relative',
-      marginRight: theme.spacing(2),
-      marginLeft: theme.spacing(1),
-      borderRadius: 2,
-      background: fade(theme.palette.common.white, 0.15),
-      '&:hover': {
-        background: fade(theme.palette.common.white, 0.25),
-      },
-      '& $inputInput': {
-        transition: theme.transitions.create('width'),
-        width: 120,
-        [theme.breakpoints.down('sm')]: {
-          width: '100%',
-        },
-        '&:focus': {
-          width: 400,
-          [theme.breakpoints.down('sm')]: {
-            width: '100%',
-          },
-        },
-      },
-      [theme.breakpoints.down('sm')]: {
-        marginLeft: 0,
-        marginRight: 0,
-      },
-    },
-    searchIcon: {
-      padding: theme.spacing(0, 2),
-      height: '100%',
-      position: 'absolute',
-      pointerEvents: 'none',
+    root: {
+      margin: theme.spacing(1, 1, 1, 4),
+      padding: theme.spacing(1),
       display: 'flex',
       alignItems: 'center',
-      justifyContent: 'center',
+      width: '75%',
+      height: 40,
+      background: fade(theme.palette.common.white, 0.15),
     },
-    inputRoot: {
-      color: 'inherit',
+    input: {
+      marginLeft: theme.spacing(1),
+      flex: 1,
     },
-    inputInput: {
-      padding: theme.spacing(1, 1, 1, 0),
-      // vertical padding + font size from searchIcon
-      paddingLeft: `calc(1em + ${theme.spacing(4)}px)`,
-      transition: theme.transitions.create('width'),
-      width: '100%',
-      [theme.breakpoints.up('md')]: {
-        width: '20ch',
-      },
+    iconButton: {
+      padding: 10,
     },
     section: {
       display: 'none',
@@ -96,10 +64,27 @@ const useStyles = makeStyles((theme: Theme) =>
   })
 )
 
+function isValidHttpUrl(string: string) {
+  let url
+
+  if (!string.startsWith('http')) {
+    string = 'https://' + string
+  }
+
+  try {
+    url = new URL(string)
+  } catch (_) {
+    return false
+  }
+
+  return url.protocol === 'http:' || url.protocol === 'https:'
+}
+
 export default function NavBar() {
   const history = useHistory()
   const classes = useStyles()
   const userAuth = useAuthState()
+  const [value, setValue] = React.useState('')
   const [anchorEl, setAnchorEl] = React.useState<null | HTMLElement>(null)
 
   const isMenuOpen = Boolean(anchorEl)
@@ -110,6 +95,15 @@ export default function NavBar() {
 
   const handleMenuClose = () => {
     setAnchorEl(null)
+  }
+
+  const onSubmit = (e) => {
+    e.preventDefault()
+    if (isValidHttpUrl(value)) {
+      history.push(`/item/add?url=${value}`)
+    }
+    history.push(`/search?q=${value}`)
+    setValue('')
   }
 
   const menuId = 'primary-search-account-menu'
@@ -143,11 +137,11 @@ export default function NavBar() {
       </MenuItem>
       <MenuItem
         onClick={() => {
-          history.push(Routes.ACCOUNT)
+          history.push(Routes.ADDITEM)
           handleMenuClose()
         }}
       >
-        My Account
+        Add New Item
       </MenuItem>
       <MenuItem
         onClick={() => {
@@ -178,32 +172,48 @@ export default function NavBar() {
           <Typography className={classes.title} variant="h6" noWrap>
             PriceWatch-VN
           </Typography>
-          <div className={classes.search}>
-            <div className={classes.searchIcon}>
-              <SearchIcon />
-            </div>
+          <form onSubmit={onSubmit} className={classes.root}>
             <InputBase
-              placeholder="Search…"
-              classes={{
-                root: classes.inputRoot,
-                input: classes.inputInput,
-              }}
+              className={classes.input}
+              placeholder="Search or URL to add new item (e.g. tiki.vn, shopee.vn)"
               inputProps={{ 'aria-label': 'search' }}
+              onChange={(event) => {
+                setValue(event.target.value)
+              }}
             />
-          </div>
+            <IconButton
+              type="submit"
+              className={classes.iconButton}
+              aria-label="search"
+            >
+              <SearchIcon />
+            </IconButton>
+          </form>
           <div className={classes.grow} />
           <div className={classes.section}>
             {userAuth.user ? (
-              <IconButton
-                edge="end"
-                aria-label="account of current user"
-                aria-controls={menuId}
-                aria-haspopup="true"
-                onClick={handleProfileMenuOpen}
-                color="inherit"
-              >
-                <AccountCircle />
-              </IconButton>
+              <div>
+                <IconButton
+                  edge="end"
+                  aria-label="add new item"
+                  aria-controls={menuId}
+                  aria-haspopup="true"
+                  onClick={() => {history.push(Routes.ADDITEM)}}
+                  color="inherit"
+                >
+                  <AddCircleOutlined />
+                </IconButton>
+                <IconButton
+                  edge="end"
+                  aria-label="account of current user"
+                  aria-controls={menuId}
+                  aria-haspopup="true"
+                  onClick={handleProfileMenuOpen}
+                  color="inherit"
+                >
+                  <AccountCircle />
+                </IconButton>
+              </div>
             ) : (
               <div>
                 <Button

@@ -16,6 +16,8 @@ import { CookieWrapper } from '../../utils/storage'
 import { CssBaseline, useMediaQuery } from '@material-ui/core'
 import { ThemeProvider} from '@material-ui/core/styles'
 import { darkTheme, lightTheme } from '../../theme'
+import Search from '../Search'
+import ItemAdd from '../ItemAdd'
 
 function App() {
   const prefersDarkMode = useMediaQuery('(prefers-color-scheme: dark)')
@@ -44,8 +46,10 @@ function App() {
         <Route path={Routes.PROFILE} component={Profile} />
         <Route path={Routes.SIGNIN} component={SignIn} />
         <Route path={Routes.SIGNUP} component={SignUp} />
+        <Route path={Routes.ADDITEM} component={ItemAdd} />
         <Route path={Routes.ITEM} component={ItemPage} />
         <Route path={Routes.SIGNOUT} component={SignOut} />
+        <Route path={Routes.SEARCH} component={Search} />
         <Route component={NotFound} />
       </Switch>
     </ThemeProvider>

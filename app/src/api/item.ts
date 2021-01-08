@@ -13,7 +13,23 @@ export async function getAllItems() {
     const response = await AxiosInstance.get('/items/prices')
     const data = response.data
     if (Array.isArray(data)) {
-      const items = data.map(d => <ItemWithPrice>d.item_with_price)
+      const items = data.map((d) => <ItemWithPrice>d.item_with_price)
+      return items
+    }
+    return null
+  } catch (err) {
+    console.log(err.response.data.error)
+    return null
+  }
+}
+
+// Returns an array of items with prices
+export async function search(params: URLSearchParams) {
+  try {
+    const response = await AxiosInstance.get('/items/search', { params })
+    const data = response.data
+    if (Array.isArray(data)) {
+      const items = data.map((d) => <ItemWithPrice>d.item_with_price)
       return items
     }
     return null
@@ -59,10 +75,10 @@ export async function getItemPrices(id: string) {
     const response = await AxiosInstance.get(`/item/${id}/prices`)
     const data = response.data
     if (Array.isArray(data)) {
-      const itemPrices = data.map(d => <ItemPrice>d.price)
+      const itemPrices = data.map((d) => <ItemPrice>d.price)
       return itemPrices
     }
-    return null 
+    return null
   } catch (err) {
     console.log(err.response.data.error)
     return null
@@ -87,14 +103,14 @@ export async function createItem(payload: CreateItemPayload) {
   }
 }
 
-export async function checkURL(payload: CreateItemPayload) : Promise<boolean> {
+export async function checkURL(payload: CreateItemPayload): Promise<boolean> {
   const requestOptions = {
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify(payload),
   }
   try {
     await AxiosInstance.post(`/item`, payload, requestOptions)
-    
+
     return true
   } catch (err) {
     console.log(err.response.data.error)

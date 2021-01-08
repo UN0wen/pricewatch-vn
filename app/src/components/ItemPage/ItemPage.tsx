@@ -14,7 +14,6 @@ import {
 } from '@devexpress/dx-react-chart-material-ui'
 import {
   Card,
-  CardHeader,
   CardMedia,
   CardContent,
   Typography,
@@ -25,13 +24,7 @@ import {
   CircularProgress,
 } from '@material-ui/core'
 import { createStyles, makeStyles, Theme } from '@material-ui/core/styles'
-import {
-  format,
-  formatDistanceToNow,
-  fromUnixTime,
-  parse,
-  parseISO,
-} from 'date-fns'
+import { format, formatDistanceToNow, fromUnixTime, parseISO } from 'date-fns'
 import React, { useEffect, useState } from 'react'
 import { useParams } from 'react-router-dom'
 import { getItem, getItemPrices } from '../../api/item'
@@ -50,15 +43,31 @@ const useStyles = makeStyles((theme: Theme) =>
       padding: theme.spacing(2),
       display: 'flex',
       flexDirection: 'column',
+      flexGrow: 1,
       alignItems: 'center',
       margin: theme.spacing(2),
     },
     root: {
       display: 'flex',
-      flexDirection: 'column',
+      flexDirection: 'row',
       margin: theme.spacing(1),
       flexGrow: 1,
-      maxWidth: 400,
+    },
+    titleContentPrice: {
+      display: 'flex',
+      flexDirection: 'column',
+      justifyContent: 'space-between',
+      alignContent: 'center',
+    },
+    buttonArea: {
+      flexGrow: 1,
+    },
+    titleContent: {
+      display: 'flex',
+      flexGrow: 5,
+      flexDirection: 'column',
+      justifyContent: 'space-between',
+      alignContent: 'center',
     },
     content: {
       display: 'flex',
@@ -67,19 +76,32 @@ const useStyles = makeStyles((theme: Theme) =>
       justifyContent: 'space-between',
       width: '100%',
     },
+    title: {
+      wordWrap: 'break-word',
+      margin: theme.spacing(1),
+      justifyContent: 'center',
+      display: 'flex',
+    },
+    titleSubtile: {
+      display: 'flex',
+      alignItems: 'center',
+      flexDirection: 'column'
+    },
     cover: {
-      height: 0,
-      paddingTop: '56.25%', // 16:9
+      width: 400,
+      height: 400,
     },
     button: {
-      height: theme.spacing(8),
+      height: '100%',
     },
     cardAction: {
       padding: 0,
+      height: '100%',
     },
     text: {
       display: 'flex',
       justifyContent: 'flex-end',
+      alignItems: 'flex-end',
       flexGrow: 1,
       marginRight: theme.spacing(1),
     },
@@ -87,6 +109,10 @@ const useStyles = makeStyles((theme: Theme) =>
       display: 'flex',
       justifyContent: 'flex-end',
       alignItems: 'flex-end',
+    },
+    chart: {
+      display: 'flex',
+      width: '90%',
     },
   })
 )
@@ -167,12 +193,7 @@ export default function ItemPage() {
   const ArgumentLabel = ({ x, y, dy, text, textAnchor }) => {
     const res = text.replace(/[ ,.]/g, '')
     return (
-      <Chart.Label
-        x={x}
-        y={y}
-        dy={dy}
-        textAnchor={textAnchor}
-      >
+      <Chart.Label x={x} y={y} dy={dy} textAnchor={textAnchor}>
         {format(fromUnixTime(res / 1000), 'h a, MMM Do')}
       </Chart.Label>
     )
@@ -180,59 +201,79 @@ export default function ItemPage() {
   return (
     <div className={classes.grow}>
       <Paper className={classes.paper}>
-        <Card className={classes.root}>
-          <CardHeader
-            title={title}
-            subheader={`Last updated: ${formatDistanceToNow(updated, {
-              addSuffix: true,
-            })}`}
-          />
-          <CardMedia className={classes.cover} image={imgURL} title={title} />
+        {loading ? (
+          <CircularProgress />
+        ) : (
+          <Card className={classes.root}>
+            <CardMedia className={classes.cover} image={imgURL} title={title} />
 
-          <div>
-            <CardContent className={classes.content}>
-              <Typography variant="h3" className={classes.text}>
-                {price.toLocaleString()}
-              </Typography>
-              <Typography
-                variant="h6"
-                color="textSecondary"
-                className={classes.vnd}
-                align="right"
-              >
-                VND
-              </Typography>
-            </CardContent>
+            <div className={classes.titleContentPrice}>
+              <CardContent className={classes.titleContent}>
+                <div className={classes.titleSubtile}>
+                  <Typography variant="h5" className={classes.title}>
+                    {title}
+                  </Typography>
+                  <Typography variant="body1" color="textSecondary">
+                    {`Last updated: ${formatDistanceToNow(updated, {
+                      addSuffix: true,
+                    })}`}
+                  </Typography>
+                </div>
+
+                <div className={classes.content}>
+                  <Typography variant="h3" className={classes.text}>
+                    {price.toLocaleString()}
+                  </Typography>
+                  <Typography
+                    variant="h6"
+                    color="textSecondary"
+                    className={classes.vnd}
+                    align="right"
+                  >
+                    VND
+                  </Typography>
+                </div>
+              </CardContent>
+              <div className={classes.buttonArea}>
+                <Divider orientation="horizontal" />
+                <CardActions className={classes.cardAction} disableSpacing>
+                  <Button
+                    onClick={onClickStore}
+                    className={classes.button}
+                    fullWidth
+                  >
+                    To store page
+                  </Button>
+                </CardActions>
+              </div>
+            </div>
+          </Card>
+        )}
+
+        {loadingPrices ? (
+          <CircularProgress />
+        ) : (
+          <div className={classes.chart}>
+            <Chart data={itemPrices} width={5000}>
+              <ValueScale name="price" />
+              <ArgumentScale name="time" />
+              <ArgumentAxis labelComponent={ArgumentLabel} />
+              <ValueAxis scaleName="price" showLine showTicks />
+              <LineSeries
+                name="Price over time"
+                valueField="price"
+                argumentField="time"
+                scaleName="price"
+                seriesComponent={Line}
+              />
+              <ScatterSeries valueField="price" argumentField="time" />{' '}
+              <EventTracker />
+              <Tooltip contentComponent={TooltipContent} />
+              <Title text="Price over time" />
+            </Chart>
           </div>
-          <Divider orientation="horizontal" />
-          <CardActions className={classes.cardAction} disableSpacing>
-            <Button onClick={onClickStore} className={classes.button} fullWidth>
-              To store page
-            </Button>
-          </CardActions>
-        </Card>
+        )}
       </Paper>
-      {loadingPrices ? (
-        <CircularProgress />
-      ) : (
-        <Chart data={itemPrices}>
-          <ValueScale name="price" />
-          <ArgumentScale name="time" />
-          <ArgumentAxis labelComponent={ArgumentLabel} />
-          <ValueAxis scaleName="price" showLine showTicks />
-          <LineSeries
-            name="Price over time"
-            valueField="price"
-            argumentField="time"
-            scaleName="price"
-            seriesComponent={Line}
-          />
-          <ScatterSeries valueField="price" argumentField="time" />{' '}
-          <EventTracker />
-          <Tooltip contentComponent={TooltipContent} />
-          <Title text="Price over time" />
-        </Chart>
-      )}
     </div>
   )
 }
