@@ -52,7 +52,7 @@ export default function Home() {
             <Grid
               container
               direction="row"
-              justify="flex-start"
+              justify="center"
               alignItems="stretch"
               spacing={3}
             >

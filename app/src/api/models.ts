@@ -35,7 +35,7 @@ export interface UserItem {
 
 export interface ItemPrice {
   item_id: string
-  time: string
+  time: Date
   price: number
   available: boolean
 }

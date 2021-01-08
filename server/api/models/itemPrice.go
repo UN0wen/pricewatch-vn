@@ -44,7 +44,7 @@ func (table *ItemPriceTable) GetAllPrices(itemID uuid.UUID) (itemPrices []ItemPr
 	var query string
 	var values []interface{}
 
-	query = fmt.Sprintf(`SELECT * FROM %s WHERE item_id=$1 ORDER BY time ASC;`, ItemPriceTableName)
+	query = fmt.Sprintf(`SELECT * FROM %s WHERE item_id=$1 ORDER BY time DESC;`, ItemPriceTableName)
 
 	values = append(values, itemID)
 	utils.Sugar.Infof("SQL Query: %s", query)

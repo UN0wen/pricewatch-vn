@@ -44,7 +44,7 @@ export async function getItemPrice(id: string) {
     const response = await AxiosInstance.get(`/item/${id}/price`)
     const data = response.data
     if (data.item) {
-      return <ItemPrice>data.item
+      return <ItemPrice>data.price
     }
     return null
   } catch (err) {
@@ -59,7 +59,7 @@ export async function getItemPrices(id: string) {
     const response = await AxiosInstance.get(`/item/${id}/prices`)
     const data = response.data
     if (Array.isArray(data)) {
-      const itemPrices = data.map(d => <ItemPrice>d.item)
+      const itemPrices = data.map(d => <ItemPrice>d.price)
       return itemPrices
     }
     return null 
