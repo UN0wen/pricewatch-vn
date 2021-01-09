@@ -128,6 +128,38 @@ func CreateItem(w http.ResponseWriter, r *http.Request) {
 	}
 	item := data.Item
 
+	// insert new item
+	returnedItem, err := models.LayerInstance().Item.Insert(*item)
+	if err != nil {
+		render.Render(w, r, payloads.ErrInternalError(err))
+		return
+	}
+
+	// add item to userItems
+	userID := r.Context().Value("userID").(uuid.UUID)
+	_, err = models.LayerInstance().UserItem.Insert(models.UserItem{UserID: userID, ItemID: returnedItem.ID})
+	if err != nil {
+		render.Render(w, r, payloads.ErrInternalError(err))
+		return
+	}
+
+	item.ID = returnedItem.ID
+	if err := render.Render(w, r, payloads.NewItemResponse(item)); err != nil {
+		render.Render(w, r, payloads.ErrRender(err))
+		return
+	}
+}
+
+// CreateItemFromURL creates a new item and then return the item if it is successful
+// It expects an URL that it can use to parse into an item object
+func CreateItemFromURL(w http.ResponseWriter, r *http.Request) {
+	data := &payloads.ItemRequest{}
+	if err := render.Bind(r, data); err != nil {
+		render.Render(w, r, payloads.ErrInvalidRequest(err))
+		return
+	}
+	item := data.Item
+
 	path, err := url.Parse(item.URL)
 	if err != nil {
 		render.Render(w, r, payloads.ErrInvalidRequest(err))
@@ -146,22 +178,6 @@ func CreateItem(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	// insert new item
-	returnedItem, err := models.LayerInstance().Item.Insert(*item)
-	if err != nil {
-		render.Render(w, r, payloads.ErrInternalError(err))
-		return
-	}
-
-	// add item to userItems
-	userID := r.Context().Value("userID").(uuid.UUID)
-	_, err = models.LayerInstance().UserItem.Insert(models.UserItem{UserID: userID, ItemID: returnedItem.ID})
-	if err != nil {
-		render.Render(w, r, payloads.ErrInternalError(err))
-		return
-	}
-
-	item.ID = returnedItem.ID
 	if err := render.Render(w, r, payloads.NewItemResponse(item)); err != nil {
 		render.Render(w, r, payloads.ErrRender(err))
 		return

@@ -32,7 +32,7 @@ func ExtractClaims(tokenString string) map[string]interface{} {
 func GenerateJWT(id uuid.UUID) string {
 	token := jwt.NewWithClaims(jwt.SigningMethodHS256, jwt.MapClaims{
 		"id":  id.String(),
-		"exp": time.Now().Add(time.Hour * 24).Unix(),
+		"exp": time.Now().Add(time.Hour * 24 * 7).Unix(),
 	})
 	tokenString, err := token.SignedString(GPTokenSecret)
 	CheckError(err)

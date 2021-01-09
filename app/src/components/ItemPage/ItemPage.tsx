@@ -85,7 +85,7 @@ const useStyles = makeStyles((theme: Theme) =>
     titleSubtile: {
       display: 'flex',
       alignItems: 'center',
-      flexDirection: 'column'
+      flexDirection: 'column',
     },
     cover: {
       width: 400,
@@ -114,6 +114,10 @@ const useStyles = makeStyles((theme: Theme) =>
       display: 'flex',
       width: '90%',
     },
+    description: {
+      display: 'flex',
+      margin: theme.spacing(1, 0)
+    }
   })
 )
 
@@ -172,6 +176,7 @@ export default function ItemPage() {
   let title = item?.name || 'No title'
   let imgURL = item?.image_url || empty
   let url = item?.url || '/'
+  let description = item?.description || 'No description'
   let updated = item?.time ? parseISO(item?.time) : new Date()
   let price: number = item?.price || 0
   const onClickStore = () => {
@@ -184,6 +189,7 @@ export default function ItemPage() {
     url = item?.url || '/'
     updated = item?.time ? parseISO(item?.time) : new Date()
     price = item?.price || 0
+    description = item?.description || 'No description'
   }, [item])
 
   const TooltipContent = ({ targetItem }) => (
@@ -219,7 +225,11 @@ export default function ItemPage() {
                     })}`}
                   </Typography>
                 </div>
+                <Divider orientation="horizontal" className={classes.description}/>
 
+                <Typography className={classes.description}>
+                  {description}
+                </Typography>
                 <div className={classes.content}>
                   <Typography variant="h3" className={classes.text}>
                     {price.toLocaleString()}
