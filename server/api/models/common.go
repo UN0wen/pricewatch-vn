@@ -36,6 +36,7 @@ func LayerInstance() *layer {
 			User:     utils.DBUser,
 			Password: utils.DBPassword,
 			Database: utils.DBName,
+			URL:      utils.DBUrl,
 		})
 		utils.CheckError(err)
 
