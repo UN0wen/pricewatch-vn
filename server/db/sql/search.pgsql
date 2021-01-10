@@ -2,13 +2,10 @@ CREATE EXTENSION IF NOT EXISTS pg_trgm;
 
 CREATE EXTENSION IF NOT EXISTS unaccent;
 
-CREATE OR REPLACE FUNCTION public.immutable_unaccent (regdictionary, text)
-  RETURNS text
-  LANGUAGE c
-  IMMUTABLE STRICT
-  AS '$libdir/unaccent'
-,
-  'unaccent_dict';
+CREATE OR REPLACE FUNCTION immutable_unaccent(varchar)
+  RETURNS text AS $$
+    SELECT unaccent($1)
+  $$ LANGUAGE sql IMMUTABLE;
 
 CREATE OR REPLACE FUNCTION public.f_lower_unaccent (text)
   RETURNS text
@@ -16,7 +13,7 @@ CREATE OR REPLACE FUNCTION public.f_lower_unaccent (text)
   IMMUTABLE STRICT
   AS $func$
   SELECT
-    lower(public.immutable_unaccent (regdictionary 'public.unaccent', $1))
+    lower(public.immutable_unaccent ($1))
 $func$;
 
 -- CREATE INDEX items_unaccent_name_idx ON items (public.f_unaccent (name));
