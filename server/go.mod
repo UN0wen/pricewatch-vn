@@ -1,3 +1,6 @@
+// +heroku goVersion go1.15
+
+
 module github.com/UN0wen/pricewatch-vn/server
 
 go 1.15
