@@ -21,6 +21,7 @@ import Routes from '../../utils/routes'
 import { useAuthState } from '../../contexts/context'
 import ScrollTop from './components/ScrollTop'
 import { AddCircleOutlined } from '@material-ui/icons'
+import { isValidHttpUrl } from '../../utils/validate'
 
 const useStyles = makeStyles((theme: Theme) =>
   createStyles({
@@ -64,22 +65,6 @@ const useStyles = makeStyles((theme: Theme) =>
   })
 )
 
-function isValidHttpUrl(string: string) {
-  let url
-
-  if (!string.startsWith('http')) {
-    string = 'https://' + string
-  }
-
-  try {
-    url = new URL(string)
-  } catch (_) {
-    return false
-  }
-
-  return url.protocol === 'http:' || url.protocol === 'https:'
-}
-
 export default function NavBar() {
   const history = useHistory()
   const classes = useStyles()
@@ -101,6 +86,7 @@ export default function NavBar() {
     e.preventDefault()
     if (isValidHttpUrl(value)) {
       history.push(`/item/add?url=${value}`)
+      return
     }
     history.push(`/search?q=${value}`)
     setValue('')

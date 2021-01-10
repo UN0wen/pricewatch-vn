@@ -6,7 +6,6 @@ import (
 	"sync"
 
 	"github.com/PuerkitoBio/goquery"
-
 	"github.com/UN0wen/pricewatch-vn/server/api/models"
 	"github.com/pkg/errors"
 )
@@ -19,6 +18,8 @@ const InStockHTTPS = "https://schema.org/InStock"
 
 // InStockHTTP is the standard in stock enum in HTTP
 const InStockHTTP = "http://schema.org/InStock"
+
+var client = &http.Client{}
 
 type scraper struct {
 	Scrapers map[string]Scraper
@@ -67,7 +68,14 @@ func Instance() *scraper {
 
 // GetDocument returns the goquery document from an URL
 func GetDocument(sanitized *url.URL) (doc *goquery.Document, err error) {
-	resp, err := http.Get("https://" + sanitized.Host + sanitized.Path)
+	req, err := http.NewRequest("GET", "https://"+sanitized.Host+sanitized.Path, nil)
+	if err != nil {
+		errors.Wrapf(err, "The external server can't be reached")
+		return
+	}
+
+	req.Header.Set("User-Agent", "Mozilla/5.0 (compatible; Googlebot/2.1; +http://www.google.com/bot.html)")
+	resp, err := client.Do(req)
 
 	if err != nil {
 		err = errors.Wrapf(err, "The external server can't be reached")

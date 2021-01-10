@@ -121,6 +121,7 @@ func GetItemsWithPrice(w http.ResponseWriter, r *http.Request) {
 // CreateItem creates a new item and then return the item if it is successful
 // It expects an URL that it can use to parse into an item object
 func CreateItem(w http.ResponseWriter, r *http.Request) {
+	var itemPrice models.ItemPrice
 	data := &payloads.ItemRequest{}
 	if err := render.Bind(r, data); err != nil {
 		render.Render(w, r, payloads.ErrInvalidRequest(err))
@@ -130,6 +131,30 @@ func CreateItem(w http.ResponseWriter, r *http.Request) {
 
 	// insert new item
 	returnedItem, err := models.LayerInstance().Item.Insert(*item)
+	if err != nil {
+		render.Render(w, r, payloads.ErrInternalError(err))
+		return
+	}
+
+	path, err := url.Parse(returnedItem.URL)
+	if err != nil {
+		render.Render(w, r, payloads.ErrInvalidRequest(err))
+		return
+	}
+	// get item's price
+	if correspondingScraper, ok := scraper.Instance().Scrapers[path.Host]; ok {
+		itemPrice, err = correspondingScraper.ScrapePrice(returnedItem)
+		if err != nil {
+			render.Render(w, r, payloads.ErrInternalError(err))
+			return
+		}
+	} else {
+		render.Render(w, r, payloads.ErrNotImplemented)
+		return
+	}
+	itemPrice.ItemID = returnedItem.ID
+	// add itemPrice to itemPrice
+	_, err = models.LayerInstance().ItemPrice.Insert(itemPrice)
 	if err != nil {
 		render.Render(w, r, payloads.ErrInternalError(err))
 		return

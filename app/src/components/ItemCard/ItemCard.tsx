@@ -66,7 +66,7 @@ export default function ItemCard(props) {
   const updated = parseISO(props.time) || 'Unknown'
   const price: number = props.price || 0
   const onClickStore = () => {
-    window.location = url
+    window.open(url)
   }
 
   const onClickItem = () => {

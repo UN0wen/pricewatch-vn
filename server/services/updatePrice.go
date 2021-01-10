@@ -61,6 +61,7 @@ func UpdateOne(item models.Item) (updated int, err error) {
 		}
 	}
 
+	utils.Sugar.Infof("%v", itemPrice)
 	if updated > 0 {
 		itemPrice.ItemID = item.ID
 		_, err = models.LayerInstance().ItemPrice.Insert(itemPrice)

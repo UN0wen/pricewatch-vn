@@ -45,6 +45,7 @@ export default function Profile() {
   const [items, setItems] = useState<Item[]>([])
   const [loading, setLoading] = useState(true)
   if (!userAuth.user) {
+    // TODO: error modal
     history.push(Routes.SIGNIN)
   }
 

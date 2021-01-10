@@ -6,27 +6,16 @@ import {
   Divider,
   CardActions,
   Button,
-  Paper,
 } from '@material-ui/core'
 import { createStyles, makeStyles, Theme } from '@material-ui/core/styles'
 import React from 'react'
-import empty from '../../images/empty.jpg'
+import empty from '../../../images/empty.jpg'
 import { Item } from '../../../api/models'
 
 const useStyles = makeStyles((theme: Theme) =>
   createStyles({
     grow: {
       flexGrow: 1,
-      height: '100%',
-    },
-    paper: {
-      marginTop: theme.spacing(2),
-      padding: theme.spacing(2),
-      display: 'flex',
-      flexDirection: 'column',
-      flexGrow: 1,
-      alignItems: 'center',
-      margin: theme.spacing(2),
     },
     root: {
       display: 'flex',
@@ -39,6 +28,7 @@ const useStyles = makeStyles((theme: Theme) =>
       flexDirection: 'column',
       justifyContent: 'space-between',
       alignContent: 'center',
+      width: '75%'
     },
     buttonArea: {
       flexGrow: 1,
@@ -47,15 +37,8 @@ const useStyles = makeStyles((theme: Theme) =>
       display: 'flex',
       flexGrow: 5,
       flexDirection: 'column',
-      justifyContent: 'space-between',
+      justifyContent: 'flex-start',
       alignContent: 'center',
-    },
-    content: {
-      display: 'flex',
-      flex: '1 0 auto',
-      flexDirection: 'row',
-      justifyContent: 'space-between',
-      width: '100%',
     },
     title: {
       wordWrap: 'break-word',
@@ -63,14 +46,10 @@ const useStyles = makeStyles((theme: Theme) =>
       justifyContent: 'center',
       display: 'flex',
     },
-    titleSubtile: {
-      display: 'flex',
-      alignItems: 'center',
-      flexDirection: 'column',
-    },
     cover: {
+      display: 'block',
       width: 400,
-      height: 400,
+      height: 400
     },
     button: {
       height: '100%',
@@ -86,15 +65,6 @@ const useStyles = makeStyles((theme: Theme) =>
       flexGrow: 1,
       marginRight: theme.spacing(1),
     },
-    vnd: {
-      display: 'flex',
-      justifyContent: 'flex-end',
-      alignItems: 'flex-end',
-    },
-    chart: {
-      display: 'flex',
-      width: '90%',
-    },
     description: {
       display: 'flex',
       margin: theme.spacing(1, 0),
@@ -102,7 +72,7 @@ const useStyles = makeStyles((theme: Theme) =>
   })
 )
 
-export default function ItemPage(props) {
+export default function ItemForm(props) {
   const classes = useStyles()
   let item: Item
 
@@ -116,22 +86,19 @@ export default function ItemPage(props) {
   const url = item?.url || '/'
   const description = item?.description || 'No description'
   const onClickStore = () => {
-    window.location.href = url
+    window.open(url)
   }
 
   return (
     <div className={classes.grow}>
-      <Paper className={classes.paper}>
-        <Card className={classes.root}>
+        <Card className={classes.root} variant="outlined">
           <CardMedia className={classes.cover} image={imgURL} title={title} />
 
           <div className={classes.titleContentPrice}>
             <CardContent className={classes.titleContent}>
-              <div className={classes.titleSubtile}>
                 <Typography variant="h5" className={classes.title}>
                   {title}
                 </Typography>
-              </div>
               <Divider
                 orientation="horizontal"
                 className={classes.description}
@@ -155,7 +122,6 @@ export default function ItemPage(props) {
             </div>
           </div>
         </Card>
-      </Paper>
     </div>
   )
 }

@@ -45,20 +45,17 @@ type FormData = {
 
 export default function SignIn() {
   const classes = useStyles()
-  const { register, handleSubmit, setError , errors} = useForm<FormData>()
+  const { register, handleSubmit, setError, errors } = useForm<FormData>()
   const dispatch = useAuthDispatch()
   const [open, setOpen] = useState(false)
 
   const onSubmit = handleSubmit(async ({ email, password }) => {
-    try {
-      const user = {
-        email,
-        password,
-      }
-      const response = await loginUser(dispatch, { user })
-      if (!response) return // TODO: error handling
-      setOpen(true)
-    } catch (error) {
+    const user = {
+      email,
+      password,
+    }
+    const response = await loginUser(dispatch, { user })
+    if (!response) {
       setError('email', {
         type: 'required',
       })
@@ -66,7 +63,9 @@ export default function SignIn() {
         type: 'required',
         message: 'Account does not exist or password does not match.',
       })
-    }
+      return
+    } // TODO: error handling
+    setOpen(true)
   })
 
   return (

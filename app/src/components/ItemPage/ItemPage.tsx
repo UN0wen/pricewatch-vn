@@ -35,17 +35,15 @@ import { line, curveStepAfter } from 'd3-shape'
 const useStyles = makeStyles((theme: Theme) =>
   createStyles({
     grow: {
-      flexGrow: 1,
       height: '100%',
+      margin: theme.spacing(2)
     },
     paper: {
-      marginTop: theme.spacing(2),
       padding: theme.spacing(2),
       display: 'flex',
       flexDirection: 'column',
       flexGrow: 1,
       alignItems: 'center',
-      margin: theme.spacing(2),
     },
     root: {
       display: 'flex',
@@ -180,7 +178,7 @@ export default function ItemPage() {
   let updated = item?.time ? parseISO(item?.time) : new Date()
   let price: number = item?.price || 0
   const onClickStore = () => {
-    window.location.href = url
+    window.open(url)
   }
 
   useEffect(() => {

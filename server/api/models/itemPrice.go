@@ -88,7 +88,7 @@ func (table *ItemPriceTable) Insert(itemPrice ItemPrice) (returnedItemPrice Item
 	}
 
 	if itemPrice.ItemID == uuid.Nil {
-		err = errors.Wrap(err, "Missing ItemID in ItemPrice")
+		err = errors.New("Missing ItemID in ItemPrice")
 		return
 	}
 

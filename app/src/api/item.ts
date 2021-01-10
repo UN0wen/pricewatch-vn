@@ -85,7 +85,10 @@ export async function getItemPrices(id: string) {
   }
 }
 
-export async function createItem(payload: CreateItemPayload) {
+export async function createItem(item: any) {
+  const payload = {
+    item: item
+  }
   const requestOptions = {
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify(payload),
@@ -109,11 +112,30 @@ export async function checkURL(payload: CreateItemPayload): Promise<boolean> {
     body: JSON.stringify(payload),
   }
   try {
-    await AxiosInstance.post(`/item`, payload, requestOptions)
+    await AxiosInstance.post(`/item/validate`, payload, requestOptions)
 
     return true
   } catch (err) {
     console.log(err.response.data.error)
     return false
+  }
+}
+
+export async function getItemFromURL(payload: CreateItemPayload): Promise<any> {
+  const requestOptions = {
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(payload),
+  }
+  try {
+    const response = await AxiosInstance.post(`/item/url`, payload, requestOptions)
+
+    const data = response.data
+    if (data) {
+      return <Item>data.item
+    }
+
+    return 400
+  } catch (err) {
+    return Number(err.response.status)
   }
 }
