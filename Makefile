@@ -3,7 +3,7 @@ JSBUILD=$(JSCMD) build
 all: test build
 build: frontend backend
 frontend:
-		cd web; $(JSBUILD)
+		cd app; $(JSBUILD)
 
 backend:
 		$(MAKE) -C ./server build
